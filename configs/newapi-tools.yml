@@ -1,0 +1,10 @@
+newapi:
+  home: "/opt/newapi"
+  port: 3000
+  docker_image: "calciumion/new-api:latest"
+  backup_dir: "/opt/newapi/backups"
+docker:
+  compose_cmd: "docker compose"
+log:
+  level: "info"
+  format: "text"

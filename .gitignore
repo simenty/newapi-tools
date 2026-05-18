@@ -1,0 +1,55 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+newapi
+/newapi
+newapi-rc
+/newapi-rc
+
+# Test binary
+*.test
+
+# Output of go coverage
+*.out
+
+# Go workspace
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+
+# Environment
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Logs
+logs/
+
+# Shell V2 build artifacts (archived)
+*.log
+
+# Temporary files
+.system_info
+plink.exe
