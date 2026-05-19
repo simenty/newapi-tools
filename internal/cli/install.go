@@ -25,6 +25,7 @@ func init() {
 	installCmd.Flags().Int("port", 0, "new-api listen port (default from config)")
 	installCmd.Flags().String("image", "", "new-api Docker image (default from config)")
 	installCmd.Flags().Bool("force", false, "force reinstall even if already installed")
+	installCmd.Flags().String("mirror", "", "registry mirror to use for this pull (e.g. tuna, aliyun, or a full URL)")
 
 	rootCmd.AddCommand(installCmd)
 }
@@ -43,6 +44,20 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		cfg.NewAPI.DockerImage = image
 	}
 	force, _ := cmd.Flags().GetBool("force")
+	mirrorFlag, _ := cmd.Flags().GetString("mirror")
+
+	// Apply mirror if specified
+	if mirrorFlag != "" {
+		if err := applyTempMirror(mirrorFlag); err != nil {
+			fmt.Printf("  Warning: could not apply mirror %q: %v\n", mirrorFlag, err)
+			fmt.Println("  Continuing without mirror...")
+		}
+	} else {
+		mirrors, _ := docker.GetCurrentMirrors()
+		if len(mirrors) == 0 {
+			fmt.Println("Tip: if pull is slow, run 'newapi-tools mirror add tuna' first.")
+		}
+	}
 
 	// Check if Docker is available
 	client, err := docker.NewClient()

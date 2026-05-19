@@ -26,6 +26,7 @@ func init() {
 	updateCmd.Flags().String("image", "", "specific image tag to update to (default: latest)")
 	updateCmd.Flags().Bool("backup", true, "create backup before updating")
 	updateCmd.Flags().Bool("force", false, "force update without backup")
+	updateCmd.Flags().String("mirror", "", "registry mirror to use for this pull (e.g. tuna, aliyun, or a full URL)")
 
 	rootCmd.AddCommand(updateCmd)
 }
@@ -39,10 +40,25 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	imageTag, _ := cmd.Flags().GetString("image")
 	doBackup, _ := cmd.Flags().GetBool("backup")
 	force, _ := cmd.Flags().GetBool("force")
+	mirrorFlag, _ := cmd.Flags().GetString("mirror")
 
 	// Override image if specified
 	if imageTag != "" {
 		cfg.NewAPI.DockerImage = imageTag
+	}
+
+	// Apply one-time mirror if specified (writes daemon.json + reloads)
+	if mirrorFlag != "" {
+		if err := applyTempMirror(mirrorFlag); err != nil {
+			fmt.Printf("  Warning: could not apply mirror %q: %v\n", mirrorFlag, err)
+			fmt.Println("  Continuing without mirror...")
+		}
+	} else {
+		// Check if any mirrors already configured in daemon.json
+		mirrors, _ := docker.GetCurrentMirrors()
+		if len(mirrors) == 0 {
+			fmt.Println("Tip: if pull is slow, run 'newapi-tools mirror add tuna' first.")
+		}
 	}
 
 	// Check Docker is available
@@ -200,4 +216,23 @@ func shortDigest(digest string) string {
 		return parts[1][:12] + "..."
 	}
 	return digest[len(digest)-12:]
+}
+
+// applyTempMirror adds a mirror to daemon.json and reloads Docker for this pull.
+// It resolves short names (e.g. "tuna") to full URLs.
+func applyTempMirror(nameOrURL string) error {
+	url, ok := docker.ResolveShortName(nameOrURL)
+	if !ok {
+		return fmt.Errorf("unknown mirror %q — use a full URL or: tuna, aliyun, ustc, 163, azure, daocloud", nameOrURL)
+	}
+	fmt.Printf("  Applying mirror: %s\n", url)
+	if err := docker.AddMirror(url); err != nil {
+		return fmt.Errorf("failed to update daemon.json: %w", err)
+	}
+	fmt.Println("  Reloading Docker daemon...")
+	if err := docker.ReloadDocker(); err != nil {
+		return fmt.Errorf("failed to reload Docker: %w", err)
+	}
+	fmt.Println("  Mirror applied.")
+	return nil
 }
