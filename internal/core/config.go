@@ -59,6 +59,9 @@ func DefaultConfig() *Config {
 // configInstance holds the loaded configuration.
 var configInstance *Config
 
+// configFileUsed records which config file was actually loaded.
+var configFileUsed string
+
 // LoadConfig initializes Viper, reads config file, and returns the merged Config.
 // configFile is the explicit path from --config flag (may be empty).
 func LoadConfig(configFile string) (*Config, error) {
@@ -92,6 +95,9 @@ func LoadConfig(configFile string) (*Config, error) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 		// Config file not found is acceptable — use defaults
+		configFileUsed = ""
+	} else {
+		configFileUsed = v.ConfigFileUsed()
 	}
 
 	// Unmarshal into Config struct
@@ -137,7 +143,7 @@ func configDir() string {
 // ConfigFileUsed returns the path of the config file that was loaded.
 // Must be called after LoadConfig.
 func ConfigFileUsed() string {
-	return viper.ConfigFileUsed()
+	return configFileUsed
 }
 
 // WriteConfig writes the given Config to the specified YAML file.

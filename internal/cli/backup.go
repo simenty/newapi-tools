@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Bonus520/newapi-tools/internal/core"
@@ -143,10 +144,22 @@ func runBackup(cmd *cobra.Command, args []string) error {
 }
 
 // dumpMySQL runs mysqldump inside the running mysql container and writes to dstPath.
+// It reads MYSQL_ROOT_PASSWORD from the .env file in the newapi home directory.
 func dumpMySQL(ctx context.Context, dstPath string) error {
 	dockerPath, err := exec.LookPath("docker")
 	if err != nil {
 		return fmt.Errorf("docker not found: %w", err)
+	}
+
+	// Read MYSQL_ROOT_PASSWORD from .env
+	cfg := core.GetConfig()
+	password := ""
+	if cfg != nil {
+		password = readEnvValue(filepath.Join(cfg.NewAPI.Home, ".env"), "MYSQL_ROOT_PASSWORD")
+	}
+	if password == "" {
+		// Fallback: read from container environment
+		password = readContainerEnv(ctx, dockerPath, "mysql", "MYSQL_ROOT_PASSWORD")
 	}
 
 	f, err := os.Create(dstPath)
@@ -155,21 +168,52 @@ func dumpMySQL(ctx context.Context, dstPath string) error {
 	}
 	defer f.Close()
 
-	cmd := exec.CommandContext(ctx, dockerPath,
+	args := []string{
 		"exec", "mysql",
 		"mysqldump", "--no-tablespaces", "-u", "root",
-		"--password=", // Will use MYSQL_ROOT_PASSWORD env inside container
-		"newapi",
-	)
+	}
+	if password != "" {
+		args = append(args, "--password="+password)
+	}
+	args = append(args, "newapi")
+
+	cmd := exec.CommandContext(ctx, dockerPath, args...)
 	cmd.Stdout = f
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		// Remove empty/invalid dump file on failure
 		os.Remove(dstPath)
 		return fmt.Errorf("mysqldump failed: %w", err)
 	}
 	return nil
+}
+
+// readEnvValue reads a KEY=VALUE pair from an env file.
+// Returns empty string if the file or key is not found.
+func readEnvValue(envFile, key string) string {
+	data, err := os.ReadFile(envFile)
+	if err != nil {
+		return ""
+	}
+	prefix := key + "="
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimPrefix(line, prefix)
+		}
+	}
+	return ""
+}
+
+// readContainerEnv reads an environment variable from a running Docker container.
+func readContainerEnv(ctx context.Context, dockerPath, container, envKey string) string {
+	out, err := exec.CommandContext(ctx, dockerPath,
+		"exec", container, "printenv", envKey,
+	).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // createTarArchive creates a tar (optionally gzip-compressed) archive of srcDir.
