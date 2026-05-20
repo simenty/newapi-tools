@@ -53,3 +53,8 @@ logs/
 # Temporary files
 .system_info
 plink.exe
+
+# Root-level loose binaries (use dist/ instead)
+newapi-tools-linux-amd64
+newapi-tools-darwin-amd64
+newapi-tools-windows-amd64.exe
