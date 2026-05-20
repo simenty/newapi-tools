@@ -20,6 +20,9 @@ make build
 # View / edit configuration
 ./dist/newapi-tools config
 ./dist/newapi-tools config set newapi.port 8080
+
+# Speed up image pulls (China mainland)
+./dist/newapi-tools mirror add tuna
 ```
 
 ## Commands
@@ -33,6 +36,7 @@ make build
 | `update` | Update new-api to latest image. Auto-backup before update (use `--backup=false` to skip) |
 | `doctor` | Run 10 diagnostic checks: Docker, containers, ports, disk, config files. Use `--fix` to auto-repair |
 | `config` | View or modify configuration. Subcommands: `set <key> <value>`, `init` (interactive wizard) |
+| `mirror` | Manage Docker registry mirrors to speed up image pulls in China |
 | `version` | Print version and build info |
 
 ### Examples
@@ -40,6 +44,9 @@ make build
 ```bash
 # Install with custom port
 newapi-tools install --port 8080
+
+# Install using a specific registry mirror
+newapi-tools install --mirror tuna
 
 # Create a backup
 newapi-tools backup --output /var/backups
@@ -49,6 +56,9 @@ newapi-tools restore --file latest --force
 
 # Update to a specific tag
 newapi-tools update --image calciumion/new-api:v0.3.x
+
+# Update using a registry mirror
+newapi-tools update --mirror tuna
 
 # Full diagnostic report in JSON
 newapi-tools doctor --json
@@ -69,15 +79,45 @@ newapi-tools config init
 newapi-tools --config /etc/newapi-tools.yml status
 ```
 
+### Mirror Examples
+
+```bash
+# List built-in mirrors
+newapi-tools mirror builtin
+
+# Add TUNA mirror (Tsinghua University)
+newapi-tools mirror add tuna
+
+# Add a custom mirror URL
+newapi-tools mirror add https://my-mirror.example.com
+
+# List currently configured mirrors
+newapi-tools mirror list
+
+# Test if a mirror is reachable
+newapi-tools mirror test tuna
+
+# Apply mirror list to /etc/docker/daemon.json and reload Docker
+newapi-tools mirror apply
+
+# Remove a mirror
+newapi-tools mirror remove tuna
+
+# Reset to empty (no mirrors)
+newapi-tools mirror reset
+```
+
+Built-in mirror shortcuts: `tuna`, `aliyun`, `ustc`, `163`, `azure`, `daocloud`
+
 ## Project Structure
 
 ```
 newapi-tools/
 ├── cmd/newapi/          # Entry point (main.go)
 ├── internal/
-│   ├── cli/             # Cobra commands (install/status/backup/restore/update/doctor/config/version)
+│   ├── cli/             # Cobra commands (install/status/backup/restore/update/doctor/config/mirror/version)
 │   ├── core/            # Config, version constants
-│   ├── docker/          # Docker CLI wrapper + compose operations
+│   ├── docker/          # Docker CLI wrapper + compose + mirror management
 │   ├── osutil/          # OS adapters (Debian/RHEL/Fedora/Arch)
 │   ├── plugin/          # Plugin system (ShellPlugin/GoPlugin/Loader)
 │   ├── registry/        # Command registry
@@ -118,7 +158,7 @@ newapi-tools --config /path/to/config.yml status
 
 ```bash
 make build    # Build binary → dist/newapi-tools
-make test     # Run all tests (78 tests across 6 packages)
+make test     # Run all tests (83 tests across 7 packages)
 make run      # Run locally
 make lint     # golangci-lint
 ```
@@ -150,7 +190,8 @@ The bundled `plugins/newapi/` plugin provides 7 commands as shell scripts, with 
 
 | Version | Highlights |
 |---------|-----------|
-| V3.0-rc | 8 commands Go-native (incl. config + doctor --fix), 78 tests, Git v2/main split |
+| V3.0.0  | mirror command (add/remove/list/apply/test/reset/builtin), 6 built-in CN mirrors, 83 tests |
+| V3.0-rc | 9 commands Go-native (incl. config + doctor --fix), 78 tests, Git v2/main split |
 | V3.0-a3 | install + status Go-native, newapi Shell plugin, 52 tests |
 | V3.0-a2 | Plugin system, Registry, Docker wrapper, OS adapter |
 | V3.0-a1 | Go project skeleton, Cobra CLI, Viper config, slog |
