@@ -322,6 +322,7 @@ func printDoctorJSON(results []checkResult) {
 // Returns the number of fixes applied.
 func runAutoFix(ctx context.Context, results []checkResult, cfg *core.Config) int {
 	fixCount := 0
+	composeStarted := false // guard: run docker compose up only once
 
 	for _, r := range results {
 		if r.Status != "FAIL" && r.Status != "WARN" {
@@ -346,7 +347,10 @@ func runAutoFix(ctx context.Context, results []checkResult, cfg *core.Config) in
 			fmt.Printf("  [HINT] Run 'newapi-tools install' to generate .env file\n")
 
 		case "new-api container", "mysql container", "redis container":
-			// Attempt to start containers if compose file exists
+			// Only run docker compose up once even if multiple containers are down
+			if composeStarted {
+				continue
+			}
 			composePath := filepath.Join(cfg.NewAPI.Home, "docker-compose.yml")
 			if _, err := os.Stat(composePath); err == nil {
 				fmt.Printf("  [FIX] Starting containers with docker compose up -d...\n")
@@ -356,6 +360,7 @@ func runAutoFix(ctx context.Context, results []checkResult, cfg *core.Config) in
 					fmt.Printf("  [FIXED] Containers started\n")
 					fixCount++
 				}
+				composeStarted = true
 			} else {
 				fmt.Printf("  [HINT] Run 'newapi-tools install' first\n")
 			}
