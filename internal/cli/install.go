@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
@@ -26,6 +27,7 @@ func init() {
 	installCmd.Flags().String("image", "", "new-api Docker image (default from config)")
 	installCmd.Flags().Bool("force", false, "force reinstall even if already installed")
 	installCmd.Flags().String("mirror", "", "registry mirror to use for this pull (e.g. tuna, aliyun, or a full URL)")
+	installCmd.Flags().Bool("no-auto-mirror", false, "skip auto-detecting and applying the fastest registry mirror")
 
 	rootCmd.AddCommand(installCmd)
 }
@@ -45,6 +47,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 	force, _ := cmd.Flags().GetBool("force")
 	mirrorFlag, _ := cmd.Flags().GetString("mirror")
+	noAutoMirror, _ := cmd.Flags().GetBool("no-auto-mirror")
 
 	// Apply mirror if specified
 	if mirrorFlag != "" {
@@ -54,7 +57,24 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 	} else {
 		mirrors, _ := docker.GetCurrentMirrors()
-		if len(mirrors) == 0 {
+		if len(mirrors) == 0 && !noAutoMirror {
+			// Auto-detect the fastest mirror
+			fmt.Println("No registry mirror configured. Auto-detecting fastest mirror...")
+			best := docker.AutoSelectMirror()
+			if best != nil {
+				fmt.Printf("  Fastest mirror: %s (%s, latency %s)\n", best.Name, best.URL, best.Latency.Round(time.Millisecond))
+				fmt.Printf("  Applying mirror %s...\n", best.Name)
+				if err := applyTempMirror(best.Name); err != nil {
+					fmt.Printf("  Warning: could not apply mirror: %v\n", err)
+					fmt.Println("  Continuing without mirror...")
+				} else {
+					fmt.Println("  Mirror applied. Image pull will use the mirror.")
+				}
+			} else {
+				fmt.Println("  No reachable mirror found. Pull may be slow in mainland China.")
+				fmt.Println("  You can manually add one later: newapi-tools mirror add tuna")
+			}
+		} else if len(mirrors) == 0 && noAutoMirror {
 			fmt.Println("Tip: if pull is slow, run 'newapi-tools mirror add tuna' first.")
 		}
 	}

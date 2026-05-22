@@ -208,3 +208,56 @@ func ResolveShortName(nameOrURL string) (string, bool) {
 	}
 	return nameOrURL, false
 }
+
+// MirrorTestResult holds the result of testing a single mirror.
+type MirrorTestResult struct {
+	Name     string
+	URL      string
+	Reachable bool
+	Latency  time.Duration
+}
+
+// AutoSelectMirror tests all built-in mirrors concurrently and returns the
+// fastest reachable one. Returns nil if none are reachable.
+// The timeout per mirror is 5 seconds.
+func AutoSelectMirror() *MirrorTestResult {
+	type result struct {
+		Name      string
+		URL       string
+		Reachable bool
+		Latency   time.Duration
+	}
+
+	ch := make(chan result, len(BuiltinMirrors))
+
+	for name, url := range BuiltinMirrors {
+		go func(name, url string) {
+			start := time.Now()
+			err := TestMirror(url)
+			latency := time.Since(start)
+			ch <- result{
+				Name:      name,
+				URL:       url,
+				Reachable: err == nil,
+				Latency:   latency,
+			}
+		}(name, url)
+	}
+
+	var best *MirrorTestResult
+	for range BuiltinMirrors {
+		r := <-ch
+		if !r.Reachable {
+			continue
+		}
+		if best == nil || r.Latency < best.Latency {
+			best = &MirrorTestResult{
+				Name:      r.Name,
+				URL:       r.URL,
+				Reachable: r.Reachable,
+				Latency:   r.Latency,
+			}
+		}
+	}
+	return best
+}

@@ -140,3 +140,32 @@ func TestMirrorListFromJSON(t *testing.T) {
 		})
 	}
 }
+
+// TestAutoSelectMirrorStructure verifies AutoSelectMirror returns proper structure.
+// It may return nil if no mirrors are reachable (e.g. in CI or air-gapped env),
+// which is a valid result.
+func TestAutoSelectMirrorStructure(t *testing.T) {
+	result := AutoSelectMirror()
+	if result == nil {
+		t.Log("AutoSelectMirror returned nil (no reachable mirrors — OK in restricted env)")
+		return
+	}
+	// If we got a result, validate its fields
+	if result.Name == "" {
+		t.Error("MirrorTestResult.Name is empty")
+	}
+	if result.URL == "" {
+		t.Error("MirrorTestResult.URL is empty")
+	}
+	if !result.Reachable {
+		t.Error("MirrorTestResult.Reachable should be true for selected mirror")
+	}
+	if result.Latency == 0 {
+		t.Error("MirrorTestResult.Latency should be > 0")
+	}
+	// The selected mirror should be one of the built-in ones
+	if _, ok := BuiltinMirrors[result.Name]; !ok {
+		t.Errorf("unexpected mirror name %q, not in BuiltinMirrors", result.Name)
+	}
+	t.Logf("AutoSelectMirror picked: %s (%s), latency=%s", result.Name, result.URL, result.Latency)
+}
