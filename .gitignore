@@ -58,3 +58,6 @@ plink.exe
 newapi-tools-linux-amd64
 newapi-tools-darwin-amd64
 newapi-tools-windows-amd64.exe
+
+# MkDocs build output
+site/
