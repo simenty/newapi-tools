@@ -4,9 +4,8 @@
 *.dll
 *.so
 *.dylib
-newapi
+# Root-level compiled binary (not the cmd/newapi/ source directory)
 /newapi
-newapi-rc
 /newapi-rc
 
 # Test binary
