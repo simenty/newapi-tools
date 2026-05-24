@@ -1,0 +1,81 @@
+classDiagram
+    class InitSh {
+        +source_all_libs()
+        +discover_plugins()
+        +register_builtin_commands()
+        +register_plugin_commands()
+    }
+
+    class RegistrySh {
+        -CMD_REGISTRY : AssocArray
+        -HOOK_REGISTRY : AssocArray
+        -PLUGIN_REGISTRY : AssocArray
+        +register_cmd(cmd, plugin_id, script, desc, help)
+        +register_hook(hook_name, plugin_id, func_name)
+        +register_plugin(plugin_id, metadata_path)
+        +route_command(cmd) string
+        +trigger_hook(hook_name, args...)
+        +list_commands() string
+        +get_plugin_dir(plugin_id) string
+    }
+
+    class ConfigSh {
+        -CONFIG_DIR : string
+        -MAIN_CONFIG : string
+        -DEFAULT_CONFIG : string
+        +init_config()
+        +get_config(key, default) string
+        +set_config(key, value)
+        +validate_config() int
+        +show_config()
+    }
+
+    class PluginSh {
+        +load_plugin(plugin_id)
+        +unload_plugin(plugin_id)
+        +validate_metadata(metadata_path) bool
+        +get_plugin_info(plugin_id) dict
+        +list_plugins() string[]
+    }
+
+    class BackupBase {
+        +_backup_prepare()
+        +_backup_finalize()
+        +_tar_with_progress()
+        +_generate_checksum_async()
+        +_wait_checksum()
+        +_cleanup_partial_backup()
+        +run_backup()
+    }
+
+    class NewapiBackup {
+        +do_backup()
+        +get_containers() string[]
+        +get_data_dirs() string[]
+    }
+
+    class OneApiBackup {
+        +do_backup()
+        +get_containers() string[]
+        +get_data_dirs() string[]
+    }
+
+    class MetadataYML {
+        +name : string
+        +display_name : string
+        +version : string
+        +gateway : dict
+        +dependencies : dict
+        +data_dirs : string[]
+        +backup : dict
+        +commands : dict
+        +hooks : dict
+    }
+
+    InitSh --> RegistrySh : 初始化
+    InitSh --> ConfigSh : 读取配置
+    RegistrySh --> MetadataYML : 解析
+    PluginSh --> RegistrySh : 注册命令/钩子
+    BackupBase <|-- NewapiBackup : do_backup()
+    BackupBase <|-- OneApiBackup : do_backup()
+    NewapiBackup --> RegistrySh : 注册 backup 命令
