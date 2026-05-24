@@ -1,0 +1,33 @@
+name: newapi
+display_name: New API
+version: "3.0.0"
+description: New API deployment and management plugin
+commands:
+  - name: install
+    script: scripts/install.sh
+    desc: Install new-api
+    help: Install new-api with Docker Compose
+  - name: backup
+    script: scripts/backup.sh
+    desc: Backup new-api data
+    help: Create a backup of new-api data
+  - name: restore
+    script: scripts/restore.sh
+    desc: Restore new-api from backup
+    help: Restore new-api data from a backup archive
+  - name: update
+    script: scripts/update.sh
+    desc: Update new-api
+    help: Update new-api to the latest version
+  - name: status
+    script: scripts/status.sh
+    desc: Show new-api status
+    help: Display current status of new-api
+  - name: config
+    script: scripts/config.sh
+    desc: Manage new-api configuration
+    help: View or modify new-api configuration
+  - name: doctor
+    script: scripts/doctor.sh
+    desc: Diagnose new-api issues
+    help: Run diagnostic checks on the new-api deployment

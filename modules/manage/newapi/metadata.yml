@@ -1,0 +1,100 @@
+# metadata.yml — NewAPI 插件元数据
+# 位置：modules/manage/newapi/metadata.yml
+
+# ===== 必填字段 =====
+name: "newapi"
+display_name: "NewAPI"
+version: "2.4.0"
+description: "NewAPI AI 网关管理插件"
+author: "newapi-tools-team"
+min_toolkit_version: "2.4.0"
+
+# 网关运行时配置
+gateway:
+  container_name: "new-api"
+  image: "calciumion/new-api:latest"
+  port: 3000
+  health_check_path: "/api/status"
+  network_name: "newapi-network"
+
+# 依赖服务
+dependencies:
+  mysql:
+    required: true
+    container_name: "mysql"
+    image: "mysql:8.0"
+    database: "newapi"
+  redis:
+    required: true
+    container_name: "redis"
+    image: "redis:7.2"
+  npm:
+    required: true
+    container_name: "npm"
+    image: "jc21/nginx-proxy-manager:latest"
+
+# 数据目录（相对于 $NEWAPI_HOME）
+data_dirs:
+  - "data"
+  - "npm"
+  - "mysql"
+
+# 备份配置
+backup:
+  has_database: true
+  database_type: "mysql"
+  database_name: "newapi"
+  database_container: "mysql"
+
+# ===== 可选字段 =====
+homepage: "https://github.com/Calcium-Ion/new-api"
+license: "MIT"
+tags:
+  - "ai-gateway"
+  - "openai-compatible"
+
+# 插件注册的命令（自动写入注册表）
+commands:
+  - name: "backup"
+    script: "backup.sh"
+    desc: "手动备份数据"
+    help: "备份 NewAPI 数据库与核心数据，生成校验文件"
+  - name: "restore"
+    script: "restore.sh"
+    desc: "从备份恢复"
+    help: "从备份列表中选择并恢复数据"
+  - name: "update"
+    script: "update.sh"
+    desc: "更新 NewAPI 镜像"
+    help: "拉取最新镜像并更新，含自动回滚"
+  - name: "reinstall"
+    script: "reinstall.sh"
+    desc: "重装 NewAPI"
+    help: "备份数据后清空重装"
+  - name: "uninstall"
+    script: "uninstall.sh"
+    desc: "彻底卸载 NewAPI"
+    help: "永久删除所有容器、数据及定时任务"
+  - name: "doctor"
+    script: "doctor.sh"
+    desc: "系统诊断"
+    help: "全面诊断 NewAPI 运行环境"
+  - name: "config"
+    script: "config.sh"
+    desc: "配置向导"
+    help: "交互式配置 NewAPI 参数"
+
+# 插件注册的钩子
+hooks:
+  - name: "post_install"
+    function: "newapi_post_install"
+    priority: 10
+  - name: "pre_update"
+    function: "newapi_pre_update"
+    priority: 10
+  - name: "post_update"
+    function: "newapi_post_update"
+    priority: 20
+  - name: "health_check"
+    function: "newapi_health_check"
+    priority: 10

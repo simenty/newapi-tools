@@ -7,19 +7,6 @@ import (
 	"testing"
 )
 
-// overrideDaemonJSONPath patches the daemon.json path to a temp file for tests.
-// Returns a cleanup function.
-func overrideDaemonJSONPath(t *testing.T) (string, func()) {
-	t.Helper()
-	tmp := filepath.Join(t.TempDir(), "daemon.json")
-	origPath := daemonJSONPath
-	// We can't reassign the const, but we can use helper funcs that accept a path.
-	// Instead, patch via test helper by directly working with the exported functions
-	// using a temp file approach through os.Setenv or by copying logic.
-	_ = origPath
-	return tmp, func() {}
-}
-
 func TestBuiltinMirrors(t *testing.T) {
 	expected := []string{"tuna", "aliyun", "ustc", "163", "azure", "daocloud"}
 	for _, name := range expected {
