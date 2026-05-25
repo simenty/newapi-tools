@@ -6,8 +6,7 @@ version: 2
 project_name: newapi-tools
 
 before:
-  hooks:
-    - C:\\Go\\bin\\go.exe mod tidy
+  hooks: []
 
 builds:
   - id: newapi
