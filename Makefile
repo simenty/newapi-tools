@@ -9,7 +9,7 @@ LDFLAGS      := -X github.com/Bonus520/newapi-tools/internal/core.Version=$(VERS
                 -X github.com/Bonus520/newapi-tools/internal/core.GitCommit=$(GIT_COMMIT) \
                 -X github.com/Bonus520/newapi-tools/internal/core.BuildDate=$(BUILD_DATE)
 
-.PHONY: build clean test run lint fmt vet coverage install release snapshot check
+.PHONY: build clean test run lint fmt vet coverage install release snapshot check i18n-extract
 
 ## build: Build the binary with version info
 build:
@@ -63,3 +63,8 @@ check: vet test
 ## help: Show this help
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## //'
+
+## i18n-extract: Extract all i18n.T() keys from source code
+i18n-extract:
+	@echo "Extracting i18n keys from source..."
+	@grep -rn 'i18n\.T(' internal/ | sed 's/.*i18n\.T("\([^"]*\)".*/\1/' | sort -u

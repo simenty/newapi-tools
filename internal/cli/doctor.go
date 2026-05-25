@@ -11,8 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
+	"github.com/Bonus520/newapi-tools/internal/security"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -83,6 +85,12 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// --- Check 10: Disk space ---
 	results = append(results, checkDiskSpace(cfg.NewAPI.Home))
 
+	// --- Check 11: Config file permissions ---
+	results = append(results, checkConfigPermissions(cfg))
+
+	// --- Check 12: Docker group membership ---
+	results = append(results, checkDockerGroupMembership())
+
 	// --- Output results ---
 	if jsonOut {
 		printDoctorJSON(results)
@@ -128,6 +136,8 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			results = append(results, checkContainer(ctx, "redis"))
 			results = append(results, checkHTTPHealth(cfg.NewAPI.Port))
 			results = append(results, checkDiskSpace(cfg.NewAPI.Home))
+			results = append(results, checkConfigPermissions(cfg))
+			results = append(results, checkDockerGroupMembership())
 
 			if jsonOut {
 				printDoctorJSON(results)
@@ -158,7 +168,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	)
 
 	if failCount > 0 {
-		return fmt.Errorf("%d diagnostic check(s) failed", failCount)
+		return apperr.New(apperr.CodeDockerNotFound, fmt.Sprintf("%d 项诊断检查失败", failCount), "", nil)
 	}
 	return nil
 }
@@ -287,6 +297,50 @@ func checkDiskSpace(home string) checkResult {
 	return checkResult{"disk space", "SKIP", "disk info unavailable on this platform"}
 }
 
+func checkConfigPermissions(cfg *core.Config) checkResult {
+	// Check common config file locations
+	configPaths := []string{}
+	if cfg.NewAPI.Home != "" {
+		configPaths = append(configPaths,
+			filepath.Join(cfg.NewAPI.Home, ".env"),
+			filepath.Join(cfg.NewAPI.Home, "docker-compose.yml"),
+		)
+	}
+
+	// Also check the main config file if it exists
+	configFile := core.ConfigFileUsed()
+	if configFile != "" {
+		configPaths = append(configPaths, configFile)
+	}
+
+	if len(configPaths) == 0 {
+		return checkResult{"config permissions", "SKIP", "no config files to check"}
+	}
+
+	var issues []string
+	for _, path := range configPaths {
+		if err := security.CheckConfigPerm(path); err != nil {
+			issues = append(issues, err.Error())
+		}
+	}
+
+	if len(issues) > 0 {
+		return checkResult{"config permissions", "WARN", strings.Join(issues, "; ")}
+	}
+	return checkResult{"config permissions", "OK", "all config files have secure permissions"}
+}
+
+func checkDockerGroupMembership() checkResult {
+	inGroup, err := security.CheckDockerGroup()
+	if err != nil {
+		return checkResult{"docker group", "WARN", fmt.Sprintf("cannot check: %v", err)}
+	}
+	if !inGroup {
+		return checkResult{"docker group", "WARN", "current user is not in 'docker' group — may need sudo"}
+	}
+	return checkResult{"docker group", "OK", "current user is in 'docker' group"}
+}
+
 func printDoctorTable(results []checkResult) {
 	maxName := 20
 	for _, r := range results {
@@ -376,6 +430,12 @@ func runAutoFix(ctx context.Context, results []checkResult, cfg *core.Config) in
 
 		case "disk space":
 			fmt.Printf("  [HINT] Free up disk space or move data to a larger volume\n")
+
+		case "config permissions":
+			fmt.Printf("  [HINT] Run: chmod 600 <config-file> to restrict permissions\n")
+
+		case "docker group":
+			fmt.Printf("  [HINT] Run: sudo usermod -aG docker $USER && newgrp docker\n")
 		}
 	}
 

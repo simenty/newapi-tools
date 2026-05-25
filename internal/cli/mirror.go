@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/docker"
 	"github.com/spf13/cobra"
 )
@@ -105,8 +106,8 @@ func runMirrorAdd(cmd *cobra.Command, args []string) error {
 	for _, arg := range args {
 		url, ok := docker.ResolveShortName(arg)
 		if !ok {
-			return fmt.Errorf("unknown mirror name %q — use a URL or one of: %s",
-				arg, builtinNamesList())
+			return apperr.New(apperr.CodeMirrorApply, fmt.Sprintf("未知镜像源 %q — 请使用 URL 或: %s",
+				arg, builtinNamesList()), "", nil)
 		}
 		resolved = append(resolved, url)
 		fmt.Printf("  Adding: %s -> %s\n", arg, url)
@@ -119,7 +120,7 @@ func runMirrorAdd(cmd *cobra.Command, args []string) error {
 	}
 	merged := append(current, resolved...)
 	if err := docker.SetMirrors(merged); err != nil {
-		return fmt.Errorf("failed to write daemon.json: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 
 	fmt.Printf("  daemon.json updated (%d mirror(s) total)\n", len(merged))
@@ -137,11 +138,11 @@ func runMirrorRemove(cmd *cobra.Command, args []string) error {
 
 	url, ok := docker.ResolveShortName(args[0])
 	if !ok {
-		return fmt.Errorf("unknown mirror: %s", args[0])
+		return apperr.New(apperr.CodeMirrorApply, fmt.Sprintf("未知镜像源: %s", args[0]), "", nil)
 	}
 
 	if err := docker.RemoveMirror(url); err != nil {
-		return fmt.Errorf("failed to update daemon.json: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 	fmt.Printf("  Removed: %s\n", url)
 
@@ -155,7 +156,7 @@ func runMirrorRemove(cmd *cobra.Command, args []string) error {
 func runMirrorList(cmd *cobra.Command, args []string) error {
 	mirrors, err := docker.GetCurrentMirrors()
 	if err != nil {
-		return fmt.Errorf("failed to read daemon.json: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 
 	if len(mirrors) == 0 {
@@ -175,7 +176,7 @@ func runMirrorList(cmd *cobra.Command, args []string) error {
 func runMirrorApply(cmd *cobra.Command, args []string) error {
 	mirrors, err := docker.GetCurrentMirrors()
 	if err != nil {
-		return fmt.Errorf("failed to read current mirrors: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 	if len(mirrors) == 0 {
 		fmt.Println("No mirrors configured — nothing to apply.")
@@ -224,7 +225,7 @@ func runMirrorReset(cmd *cobra.Command, args []string) error {
 	autoApply, _ := cmd.Flags().GetBool("apply")
 
 	if err := docker.SetMirrors(nil); err != nil {
-		return fmt.Errorf("failed to clear mirrors: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 	fmt.Println("  Cleared all registry mirrors from daemon.json.")
 
@@ -257,7 +258,7 @@ func applyAndReload() error {
 	fmt.Printf("  Applying %d mirror(s) to /etc/docker/daemon.json...\n", len(mirrors))
 	fmt.Println("  Reloading Docker daemon...")
 	if err := docker.ReloadDocker(); err != nil {
-		return fmt.Errorf("failed to reload Docker daemon: %w", err)
+		return apperr.Wrap(apperr.CodeDockerDaemonDown, "", err)
 	}
 	fmt.Println("  Docker daemon reloaded.")
 	fmt.Println("  Mirror(s) active. Next 'docker pull' will use the configured mirrors.")

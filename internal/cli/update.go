@@ -9,8 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
+	"github.com/Bonus520/newapi-tools/internal/i18n"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -83,12 +85,12 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	// Check Docker is available
 	client, err := docker.NewClient()
 	if err != nil {
-		return fmt.Errorf("docker not available: %w", err)
+		return apperr.Wrap(apperr.CodeDockerNotFound, "", err)
 	}
 	defer client.Close()
 
 	if !client.IsAvailable() {
-		return fmt.Errorf("docker daemon is not accessible")
+		return apperr.New(apperr.CodeDockerDaemonDown, "Docker daemon 不可访问", "", nil)
 	}
 
 	// Verify new-api is installed
@@ -97,7 +99,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to check container: %w", err)
 	}
 	if container == nil {
-		return fmt.Errorf("new-api is not installed. Run 'newapi-tools install' first")
+		return apperr.New(apperr.CodeInstallFailed, "new-api 未安装，请先运行 'newapi-tools install'", "", nil)
 	}
 
 	currentImage := container.Image
@@ -108,26 +110,19 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Current image: %s\n", currentImage)
 	fmt.Printf("Target image:  %s\n", cfg.NewAPI.DockerImage)
 
-	// --- Step 1: Backup (unless --force or --backup=false) ---
+	// --- Pre-step: Backup (unless --force or --backup=false) ---
 	if doBackup && !force {
-		fmt.Println()
-		fmt.Println("Step 1/3: Creating pre-update backup...")
 		if err := performBackup(cmd.Context(), cfg); err != nil {
 			ui.L().Warn("pre-update backup failed", "error", err)
 			fmt.Printf("  Warning: backup failed: %v\n", err)
 			fmt.Println("  Continuing with update (use --force to skip backup entirely)...")
-		} else {
-			fmt.Println("  Backup completed.")
 		}
-	} else {
-		fmt.Println("Step 1/3: Backup skipped.")
 	}
 
-	// --- Step 2: Pull new image ---
-	fmt.Println()
-	fmt.Println("Step 2/3: Pulling new image...")
+	// --- Step [1/3]: Pull new image ---
+	ui.PrintStep(1, 3, i18n.T("update.step_pull"))
 	if err := client.ImagePull(cmd.Context(), cfg.NewAPI.DockerImage); err != nil {
-		return fmt.Errorf("failed to pull image %s: %w", cfg.NewAPI.DockerImage, err)
+		return apperr.Wrap(apperr.CodeInstallFailed, "", err)
 	}
 	fmt.Println("  Image pulled.")
 
@@ -137,13 +132,15 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		fmt.Printf("  Digest: %s\n", shortDigest(newDigest))
 	}
 
-	// --- Step 3: Recreate container via compose up --force-recreate ---
-	fmt.Println()
-	fmt.Println("Step 3/3: Recreating containers...")
+	// --- Step [2/3]: Recreate container ---
+	ui.PrintStep(2, 3, i18n.T("update.step_recreate"))
 	if err := composeUpForceRecreate(cmd.Context(), cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
-		return fmt.Errorf("failed to recreate containers: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 	fmt.Println("  Containers recreated.")
+
+	// --- Step [3/3]: Verify service ---
+	ui.PrintStep(3, 3, "update.complete")
 
 	// Verify the container is running
 	time.Sleep(2 * time.Second)
@@ -242,15 +239,15 @@ func shortDigest(digest string) string {
 func applyTempMirror(nameOrURL string) error {
 	url, ok := docker.ResolveShortName(nameOrURL)
 	if !ok {
-		return fmt.Errorf("unknown mirror %q — use a full URL or: tuna, aliyun, ustc, 163, azure, daocloud", nameOrURL)
+		return apperr.New(apperr.CodeMirrorApply, fmt.Sprintf("未知镜像源 %q", nameOrURL), "", nil)
 	}
 	fmt.Printf("  Applying mirror: %s\n", url)
 	if err := docker.AddMirror(url); err != nil {
-		return fmt.Errorf("failed to update daemon.json: %w", err)
+		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
 	}
 	fmt.Println("  Reloading Docker daemon...")
 	if err := docker.ReloadDocker(); err != nil {
-		return fmt.Errorf("failed to reload Docker: %w", err)
+		return apperr.Wrap(apperr.CodeDockerDaemonDown, "", err)
 	}
 	fmt.Println("  Mirror applied.")
 	return nil

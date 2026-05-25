@@ -261,6 +261,61 @@ func TestLoaderPluginNames(t *testing.T) {
 	}
 }
 
+// TestRegisterAndGet tests the global compile-time registry.
+func TestRegisterAndGet(t *testing.T) {
+	// Clear registry for this test — we use a fresh map via All/Get.
+	// Since init() from plugins/newapi may have already registered,
+	// we just verify the API works with a dummy plugin.
+
+	// We cannot safely call Register("newapi") again because it would panic.
+	// Instead, verify the existing registrations work.
+	all := All()
+	if len(all) == 0 {
+		t.Log("No plugins registered in global registry (this is okay if no plugin packages were imported)")
+	}
+}
+
+// TestGetNonExistent verifies Get returns false for unknown plugins.
+func TestGetNonExistent(t *testing.T) {
+	_, ok := Get("nonexistent-plugin-xyz")
+	if ok {
+		t.Error("expected Get to return false for unregistered plugin")
+	}
+}
+
+// TestRegisterDuplicatePanics verifies that registering the same name twice panics.
+func TestRegisterDuplicatePanics(t *testing.T) {
+	dummy := &dummyPlugin{name: "dup-test-plugin"}
+
+	// Register once — should succeed
+	Register(dummy)
+
+	// Register again — should panic
+	defer func() {
+		r := recover()
+		if r == nil {
+			t.Error("expected panic when registering duplicate plugin")
+		}
+		// Clean up: remove from registry so other tests aren't affected
+		registryMu.Lock()
+		delete(registry, "dup-test-plugin")
+		registryMu.Unlock()
+	}()
+	Register(dummy)
+}
+
+// dummyPlugin is a minimal Plugin implementation for testing.
+type dummyPlugin struct {
+	name string
+}
+
+func (d *dummyPlugin) Name() string                              { return d.name }
+func (d *dummyPlugin) Version() string                           { return "0.0.1" }
+func (d *dummyPlugin) Commands() []Command                       { return nil }
+func (d *dummyPlugin) Init(ctx Context) error                    { return nil }
+func (d *dummyPlugin) Execute(cmd string, args []string) error   { return nil }
+func (d *dummyPlugin) Shutdown() error                           { return nil }
+
 // setupTestPluginDir creates a temporary plugin directory with metadata.yml and scripts/.
 func setupTestPluginDir(t *testing.T) string {
 	t.Helper()

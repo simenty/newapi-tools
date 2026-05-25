@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
@@ -160,7 +161,7 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 
 	// Persist
 	if err := core.WriteConfig(cfg, configFile); err != nil {
-		return fmt.Errorf("failed to save config: %w", err)
+		return apperr.Wrap(apperr.CodeConfigLoad, "", err)
 	}
 
 	fmt.Printf("Set %s = %s\n", key, value)

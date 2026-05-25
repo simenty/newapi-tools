@@ -142,3 +142,106 @@ func TestNewAPILoaderIntegration(t *testing.T) {
 		t.Errorf("expected 7 commands, got %d", len(p.Commands()))
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Go plugin (compile-time registry) tests
+// ---------------------------------------------------------------------------
+
+// TestNewAPIPluginImplementsInterface verifies NewAPIPlugin satisfies plugin.Plugin.
+func TestNewAPIPluginImplementsInterface(t *testing.T) {
+	var _ plugin.Plugin = &NewAPIPlugin{}
+}
+
+// TestNewAPIPluginName verifies the plugin name.
+func TestNewAPIPluginName(t *testing.T) {
+	p := &NewAPIPlugin{}
+	if p.Name() != "newapi" {
+		t.Errorf("expected name 'newapi', got '%s'", p.Name())
+	}
+}
+
+// TestNewAPIPluginVersion verifies the plugin version.
+func TestNewAPIPluginVersion(t *testing.T) {
+	p := &NewAPIPlugin{}
+	if p.Version() != "3.1.0" {
+		t.Errorf("expected version '3.1.0', got '%s'", p.Version())
+	}
+}
+
+// TestNewAPIPluginCommands verifies that all 8 commands are registered.
+func TestNewAPIPluginCommands(t *testing.T) {
+	p := &NewAPIPlugin{}
+	cmds := p.Commands()
+
+	expectedNames := []string{"install", "status", "backup", "restore", "update", "doctor", "config", "mirror"}
+	if len(cmds) != len(expectedNames) {
+		t.Fatalf("expected %d commands, got %d", len(expectedNames), len(cmds))
+	}
+
+	for i, expected := range expectedNames {
+		if cmds[i].Name != expected {
+			t.Errorf("command[%d]: expected '%s', got '%s'", i, expected, cmds[i].Name)
+		}
+	}
+}
+
+// TestNewAPIPluginInit verifies Init returns nil.
+func TestNewAPIPluginInit(t *testing.T) {
+	p := &NewAPIPlugin{}
+	ctx := plugin.NewContext(
+		"/opt/newapi", 3000,
+		"calciumion/new-api:latest",
+		"/opt/newapi/backups",
+		"docker compose",
+		slog.Default(),
+		"/tmp",
+	)
+	if err := p.Init(ctx); err != nil {
+		t.Fatalf("Init should not fail, got: %v", err)
+	}
+}
+
+// TestNewAPIPluginExecuteReturnsError verifies that Execute returns an error
+// (built-in commands are dispatched by the CLI layer, not by Execute).
+func TestNewAPIPluginExecuteReturnsError(t *testing.T) {
+	p := &NewAPIPlugin{}
+	err := p.Execute("install", nil)
+	if err == nil {
+		t.Error("expected Execute to return an error for built-in plugin")
+	}
+}
+
+// TestNewAPIPluginShutdown verifies Shutdown returns nil.
+func TestNewAPIPluginShutdown(t *testing.T) {
+	p := &NewAPIPlugin{}
+	if err := p.Shutdown(); err != nil {
+		t.Fatalf("Shutdown should not fail, got: %v", err)
+	}
+}
+
+// TestNewAPIPluginRegisteredInGlobalRegistry verifies that init() has
+// registered the plugin in the global compile-time registry.
+func TestNewAPIPluginRegisteredInGlobalRegistry(t *testing.T) {
+	p, ok := plugin.Get("newapi")
+	if !ok {
+		t.Fatal("expected 'newapi' to be registered in global plugin registry")
+	}
+	if p.Name() != "newapi" {
+		t.Errorf("expected registered plugin name 'newapi', got '%s'", p.Name())
+	}
+	if p.Version() != "3.1.0" {
+		t.Errorf("expected registered plugin version '3.1.0', got '%s'", p.Version())
+	}
+}
+
+// TestNewAPIPluginAllRegistry verifies that All() includes the newapi plugin.
+func TestNewAPIPluginAllRegistry(t *testing.T) {
+	all := plugin.All()
+	p, ok := all["newapi"]
+	if !ok {
+		t.Fatal("expected 'newapi' in plugin.All()")
+	}
+	if p.Version() != "3.1.0" {
+		t.Errorf("expected version '3.1.0', got '%s'", p.Version())
+	}
+}

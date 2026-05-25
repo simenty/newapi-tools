@@ -13,8 +13,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
+	"github.com/Bonus520/newapi-tools/internal/i18n"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -52,7 +54,7 @@ func runBackup(cmd *cobra.Command, args []string) error {
 
 	// Ensure new-api home exists
 	if _, err := os.Stat(cfg.NewAPI.Home); os.IsNotExist(err) {
-		return fmt.Errorf("new-api home directory not found: %s", cfg.NewAPI.Home)
+		return apperr.New(apperr.CodeBackupFailed, fmt.Sprintf("new-api 安装目录不存在: %s", cfg.NewAPI.Home), "", err)
 	}
 
 	// Check Docker availability (needed to dump MySQL)
@@ -80,7 +82,7 @@ func runBackup(cmd *cobra.Command, args []string) error {
 	archivePath := filepath.Join(outputDir, archiveName)
 
 	ui.L().Info("creating backup", "path", archivePath)
-	fmt.Printf("Creating backup: %s\n", archivePath)
+	ui.PrintStep(1, 3, i18n.T("backup.creating", archivePath))
 
 	// Staging directory for backup contents
 	stageDir, err := os.MkdirTemp("", "newapi-backup-*")
@@ -88,6 +90,9 @@ func runBackup(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
 	defer os.RemoveAll(stageDir)
+
+	// Step [2/3]: Package data
+	ui.PrintStep(2, 3, "backup.copying_data")
 
 	// Copy config files from home directory
 	for _, f := range []string{"docker-compose.yml", ".env"} {
@@ -119,9 +124,12 @@ func runBackup(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Step [3/3]: Create archive and report
+	ui.PrintStep(3, 3, "backup.complete")
+
 	// Create tar archive
 	if err := createTarArchive(archivePath, stageDir, compress); err != nil {
-		return fmt.Errorf("failed to create archive: %w", err)
+		return apperr.Wrap(apperr.CodeBackupFailed, "", err)
 	}
 
 	// Report size

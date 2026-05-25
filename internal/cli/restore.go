@@ -12,8 +12,10 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
+	"github.com/Bonus520/newapi-tools/internal/i18n"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -84,33 +86,33 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	// Connect to Docker to stop/start containers
 	client, err := docker.NewClient()
 	if err != nil {
-		return fmt.Errorf("docker not available: %w", err)
+		return apperr.Wrap(apperr.CodeDockerNotFound, "", err)
 	}
 	defer client.Close()
 
-	// Stop running containers
+	// Step [1/3]: Stop running containers
+	ui.PrintStep(1, 3, "restore.stopping")
 	ui.L().Info("stopping new-api containers before restore")
-	fmt.Println("Stopping new-api containers...")
 	if err := docker.ComposeDown(cmd.Context(), cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
 		ui.L().Warn("compose down failed, continuing anyway", "error", err)
 	}
 
-	// Extract backup archive into home directory
+	// Step [2/3]: Extract backup archive
+	ui.PrintStep(2, 3, i18n.T("restore.extracting", cfg.NewAPI.Home))
 	ui.L().Info("extracting backup", "file", backupFile, "target", cfg.NewAPI.Home)
-	fmt.Printf("Extracting backup to %s...\n", cfg.NewAPI.Home)
 	if err := extractTarArchive(backupFile, cfg.NewAPI.Home); err != nil {
-		return fmt.Errorf("failed to extract backup: %w", err)
+		return apperr.Wrap(apperr.CodeRestoreFailed, "", err)
 	}
 
-	// Restart containers
+	// Step [3/3]: Restart containers
+	ui.PrintStep(3, 3, "restore.restarting")
 	ui.L().Info("restarting new-api after restore")
-	fmt.Println("Restarting new-api...")
 	if err := docker.ComposeUp(cmd.Context(), cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
-		return fmt.Errorf("failed to restart after restore: %w", err)
+		return apperr.Wrap(apperr.CodeRestoreFailed, "", err)
 	}
 
 	fmt.Println()
-	fmt.Println("Restore complete!")
+	ui.PrintStep(3, 3, "restore.complete")
 	fmt.Printf("  Source: %s\n", backupFile)
 	fmt.Printf("  Target: %s\n", cfg.NewAPI.Home)
 

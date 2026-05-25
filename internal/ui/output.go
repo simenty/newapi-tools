@@ -1,12 +1,14 @@
-// NewAPI Tools - Docker management platform for newapi
+// NewAPI Tools - UI output utilities and logger setup
 package ui
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/Bonus520/newapi-tools/internal/core"
+	"github.com/Bonus520/newapi-tools/internal/i18n"
 )
 
 // SetupLogger initializes the global slog logger based on the provided config.
@@ -45,4 +47,11 @@ func SetupLogger(cfg *core.LogConfig) {
 // L returns the default slog.Logger.
 func L() *slog.Logger {
 	return slog.Default()
+}
+
+// PrintStep prints a progress step indicator to stdout.
+// Format: [step/total] message
+// The message is translated via i18n.T() if a matching key exists.
+func PrintStep(step, total int, msg string) {
+	fmt.Printf("[%d/%d] %s\n", step, total, i18n.T(msg))
 }
