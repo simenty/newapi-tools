@@ -2,54 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://simenty.github.io/newapi-tools/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
+    </url>
+    <url>
+         <loc>https://simenty.github.io/newapi-tools/plugin-development/</loc>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/backup/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/config/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/doctor/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/install/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/mirror/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/restore/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/status/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/update/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/commands/version/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/guide/faq/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/guide/getting-started/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
     <url>
          <loc>https://simenty.github.io/newapi-tools/guide/mirror/</loc>
-         <lastmod>2026-05-24</lastmod>
+         <lastmod>2026-05-25</lastmod>
     </url>
 </urlset>
