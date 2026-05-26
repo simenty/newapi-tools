@@ -1030,27 +1030,38 @@
 
 <h1 id="_1">快速开始</h1>
 <h2 id="_2">安装</h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Linux (amd64)</label><label for="__tabbed_1_2">Linux (arm64)</label><label for="__tabbed_1_3">macOS (amd64)</label><label for="__tabbed_1_4">macOS (arm64 / Apple Silicon)</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:5"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Linux (amd64)</label><label for="__tabbed_1_2">Linux (arm64)</label><label for="__tabbed_1_3">macOS (Intel)</label><label for="__tabbed_1_4">macOS (Apple Silicon)</label><label for="__tabbed_1_5">Windows (amd64)</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_linux_amd64.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>xz
-sudo<span class="w"> </span>mv<span class="w"> </span>newapi-tools<span class="w"> </span>/usr/local/bin/
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>-O<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Linux_x86_64.zip
+unzip<span class="w"> </span>newapi_v3.1.0_Linux_x86_64.zip
+sudo<span class="w"> </span>mv<span class="w"> </span>newapi_v3.1.0_linux_amd64<span class="w"> </span>/usr/local/bin/newapi-tools
+sudo<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/usr/local/bin/newapi-tools
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_linux_arm64.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>xz
-sudo<span class="w"> </span>mv<span class="w"> </span>newapi-tools<span class="w"> </span>/usr/local/bin/
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>-O<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Linux_arm64.zip
+unzip<span class="w"> </span>newapi_v3.1.0_Linux_arm64.zip
+sudo<span class="w"> </span>mv<span class="w"> </span>newapi_v3.1.0_linux_arm64<span class="w"> </span>/usr/local/bin/newapi-tools
+sudo<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/usr/local/bin/newapi-tools
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_darwin_amd64.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>xz
-sudo<span class="w"> </span>mv<span class="w"> </span>newapi-tools<span class="w"> </span>/usr/local/bin/
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>-O<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Darwin_x86_64.zip
+unzip<span class="w"> </span>newapi_v3.1.0_Darwin_x86_64.zip
+sudo<span class="w"> </span>mv<span class="w"> </span>newapi_v3.1.0_darwin_amd64<span class="w"> </span>/usr/local/bin/newapi-tools
+sudo<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/usr/local/bin/newapi-tools
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_darwin_arm64.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>tar<span class="w"> </span>xz
-sudo<span class="w"> </span>mv<span class="w"> </span>newapi-tools<span class="w"> </span>/usr/local/bin/
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-fsSL<span class="w"> </span>-O<span class="w"> </span>https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Darwin_arm64.zip
+unzip<span class="w"> </span>newapi_v3.1.0_Darwin_arm64.zip
+sudo<span class="w"> </span>mv<span class="w"> </span>newapi_v3.1.0_darwin_arm64<span class="w"> </span>/usr/local/bin/newapi-tools
+sudo<span class="w"> </span>chmod<span class="w"> </span>+x<span class="w"> </span>/usr/local/bin/newapi-tools
 </code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>从 <a href="https://github.com/simenty/newapi-tools/releases/latest">GitHub Releases</a> 下载 <code>newapi_v3.1.0_Windows_x86_64.zip</code>，解压后将 <code>newapi_v3.1.0_windows_amd64.exe</code> 重命名为 <code>newapi-tools.exe</code> 并加入 PATH。</p>
 </div>
 </div>
 </div>
@@ -1062,6 +1073,9 @@ sudo<span class="w"> </span>mv<span class="w"> </span>newapi-tools<span class="w
 <h2 id="new-api">部署 new-api</h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># 一键部署（自动拉取镜像、生成配置、启动 new-api + MySQL + Redis）</span>
 newapi-tools<span class="w"> </span>install
+
+<span class="c1"># 交互式向导（自定义端口/数据库/Redis）</span>
+newapi-tools<span class="w"> </span>install<span class="w"> </span>--interactive
 
 <span class="c1"># 自定义端口</span>
 newapi-tools<span class="w"> </span>install<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
@@ -1077,6 +1091,12 @@ newapi-tools<span class="w"> </span>install<span class="w"> </span>--mirror<span
 <h2 id="_4">检查状态</h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># 查看容器状态</span>
 newapi-tools<span class="w"> </span>status
+
+<span class="c1"># 实时监控（每 2 秒刷新）</span>
+newapi-tools<span class="w"> </span>status<span class="w"> </span>--watch<span class="w"> </span>--interval<span class="w"> </span><span class="m">2</span>
+
+<span class="c1"># 显示所有关联容器（含 CPU/MEM 统计）</span>
+newapi-tools<span class="w"> </span>status<span class="w"> </span>--all
 
 <span class="c1"># JSON 格式输出（方便脚本处理）</span>
 newapi-tools<span class="w"> </span>status<span class="w"> </span>--json
