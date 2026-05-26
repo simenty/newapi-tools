@@ -29,6 +29,15 @@
     sudo chmod +x /usr/local/bin/newapi-tools
     ```
 
+=== "macOS (Apple Silicon)"
+
+    ```bash
+    curl -fsSL -O https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Darwin_arm64.zip
+    unzip newapi_v3.1.0_Darwin_arm64.zip
+    sudo mv newapi_v3.1.0_darwin_arm64 /usr/local/bin/newapi-tools
+    sudo chmod +x /usr/local/bin/newapi-tools
+    ```
+
 === "Windows (amd64)"
 
     从 [GitHub Releases](https://github.com/simenty/newapi-tools/releases/latest) 下载 `newapi_v3.1.0_Windows_x86_64.zip`，解压后将 `newapi_v3.1.0_windows_amd64.exe` 重命名为 `newapi-tools.exe` 并加入 PATH。
