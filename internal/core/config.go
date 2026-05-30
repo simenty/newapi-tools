@@ -21,10 +21,11 @@ type Config struct {
 
 // NewAPIConfig holds new-api specific configuration.
 type NewAPIConfig struct {
-	Home        string `mapstructure:"home"`
-	Port        int    `mapstructure:"port"`
-	DockerImage string `mapstructure:"docker_image"`
-	BackupDir   string `mapstructure:"backup_dir"`
+	Home          string `mapstructure:"home"`
+	Port          int    `mapstructure:"port"`
+	DockerImage   string `mapstructure:"docker_image"`
+	BackupDir     string `mapstructure:"backup_dir"`
+	HealthTimeout int    `mapstructure:"health_timeout"`
 }
 
 // DockerConfig holds Docker-related configuration.
@@ -47,10 +48,11 @@ type InstanceConfig struct {
 func DefaultConfig() *Config {
 	return &Config{
 		NewAPI: NewAPIConfig{
-			Home:        "/opt/newapi",
-			Port:        3000,
-			DockerImage: "calciumion/new-api:latest",
-			BackupDir:   "/opt/newapi/backups",
+			Home:          "/opt/newapi",
+			Port:          3000,
+			DockerImage:   "calciumion/new-api:latest",
+			BackupDir:     "/opt/newapi/backups",
+			HealthTimeout: 120,
 		},
 		Docker: DockerConfig{
 			ComposeCmd: "docker compose",
@@ -129,6 +131,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("newapi.port", defaults.NewAPI.Port)
 	v.SetDefault("newapi.docker_image", defaults.NewAPI.DockerImage)
 	v.SetDefault("newapi.backup_dir", defaults.NewAPI.BackupDir)
+	v.SetDefault("newapi.health_timeout", defaults.NewAPI.HealthTimeout)
 	v.SetDefault("docker.compose_cmd", defaults.Docker.ComposeCmd)
 	v.SetDefault("log.level", defaults.Log.Level)
 	v.SetDefault("log.format", defaults.Log.Format)
@@ -162,10 +165,11 @@ func WriteConfig(cfg *Config, path string) error {
 
 	data := map[string]interface{}{
 		"newapi": map[string]interface{}{
-			"home":         cfg.NewAPI.Home,
-			"port":         cfg.NewAPI.Port,
-			"docker_image": cfg.NewAPI.DockerImage,
-			"backup_dir":   cfg.NewAPI.BackupDir,
+			"home":           cfg.NewAPI.Home,
+			"port":           cfg.NewAPI.Port,
+			"docker_image":   cfg.NewAPI.DockerImage,
+			"backup_dir":     cfg.NewAPI.BackupDir,
+			"health_timeout": cfg.NewAPI.HealthTimeout,
 		},
 		"docker": map[string]interface{}{
 			"compose_cmd": cfg.Docker.ComposeCmd,

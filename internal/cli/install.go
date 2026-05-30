@@ -38,6 +38,7 @@ func init() {
 	installCmd.Flags().Bool("no-auto-mirror", false, "skip auto-detecting and applying the fastest registry mirror")
 	installCmd.Flags().Bool("interactive", false, "run interactive installation wizard")
 	installCmd.Flags().String("instance", "", "instance name to install (for multi-instance management)")
+	installCmd.Flags().Int("health-timeout", 120, "健康检查超时时间（秒）")
 
 	rootCmd.AddCommand(installCmd)
 }
@@ -79,6 +80,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 	if image, _ := cmd.Flags().GetString("image"); image != "" {
 		cfg.NewAPI.DockerImage = image
+	}
+	if healthTimeout, _ := cmd.Flags().GetInt("health-timeout"); healthTimeout != 0 {
+		cfg.NewAPI.HealthTimeout = healthTimeout
 	}
 	force, _ := cmd.Flags().GetBool("force")
 	mirrorFlag, _ := cmd.Flags().GetString("mirror")
@@ -205,7 +209,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	}
 
 	// Post-install healthcheck
-	waitForHealth(cfg.NewAPI.Port)
+	waitForHealth(cfg.NewAPI.Port, cfg.NewAPI.HealthTimeout)
 
 	// Step [4/4]: Verify service
 	ui.PrintStep(4, 4, "install.success")
@@ -367,17 +371,20 @@ func runInstallWizard(cfg *core.Config) (installOptions, error) {
 
 // waitForHealth polls the new-api health endpoint until it responds or times out.
 // It prints a success or warning message but never returns an error (non-blocking).
-func waitForHealth(port int) {
+func waitForHealth(port int, timeoutSeconds int) {
 	if port <= 0 {
 		port = 3000
+	}
+	if timeoutSeconds <= 0 {
+		timeoutSeconds = 120
 	}
 	url := fmt.Sprintf("http://localhost:%d/api/status", port)
 	client := &http.Client{Timeout: 3 * time.Second}
 
 	fmt.Println()
-	fmt.Println("Waiting for service to become healthy...")
+	fmt.Printf("Waiting for service to become healthy (timeout: %d seconds)...\n", timeoutSeconds)
 
-	maxWait := 60 * time.Second
+	maxWait := time.Duration(timeoutSeconds) * time.Second
 	interval := 3 * time.Second
 	deadline := time.Now().Add(maxWait)
 
@@ -393,7 +400,7 @@ func waitForHealth(port int) {
 		time.Sleep(interval)
 	}
 
-	fmt.Println("⚠️  服务健康检查超时（60秒），请手动检查容器状态: docker ps")
+	fmt.Printf("⚠️  服务健康检查超时（%d秒），请手动检查容器状态: docker ps\n", timeoutSeconds)
 }
 
 type composeService struct {
