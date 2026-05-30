@@ -18,11 +18,8 @@ type ServiceStatus struct {
 
 // ComposeUp starts the compose services in detached mode.
 // Uses exec.Command to call docker compose CLI.
-func ComposeUp(ctx context.Context, projectDir string, composeCmd string) error {
-	if composeCmd == "" {
-		composeCmd = "docker compose"
-	}
-
+func (c *Client) ComposeUp(ctx context.Context, projectDir string) error {
+	composeCmd := c.composeCmd
 	parts := strings.Split(composeCmd, " ")
 	args := append(parts, "-f", projectDir+"/docker-compose.yml", "up", "-d")
 
@@ -38,11 +35,8 @@ func ComposeUp(ctx context.Context, projectDir string, composeCmd string) error 
 }
 
 // ComposeDown stops and removes the compose services.
-func ComposeDown(ctx context.Context, projectDir string, composeCmd string) error {
-	if composeCmd == "" {
-		composeCmd = "docker compose"
-	}
-
+func (c *Client) ComposeDown(ctx context.Context, projectDir string) error {
+	composeCmd := c.composeCmd
 	parts := strings.Split(composeCmd, " ")
 	args := append(parts, "-f", projectDir+"/docker-compose.yml", "down")
 
@@ -58,11 +52,8 @@ func ComposeDown(ctx context.Context, projectDir string, composeCmd string) erro
 }
 
 // ComposePull pulls the latest images for the compose services.
-func ComposePull(ctx context.Context, projectDir string, composeCmd string) error {
-	if composeCmd == "" {
-		composeCmd = "docker compose"
-	}
-
+func (c *Client) ComposePull(ctx context.Context, projectDir string) error {
+	composeCmd := c.composeCmd
 	parts := strings.Split(composeCmd, " ")
 	args := append(parts, "-f", projectDir+"/docker-compose.yml", "pull")
 
@@ -78,11 +69,8 @@ func ComposePull(ctx context.Context, projectDir string, composeCmd string) erro
 }
 
 // ComposePs lists the status of compose services.
-func ComposePs(ctx context.Context, projectDir string, composeCmd string) ([]ServiceStatus, error) {
-	if composeCmd == "" {
-		composeCmd = "docker compose"
-	}
-
+func (c *Client) ComposePs(ctx context.Context, projectDir string) ([]ServiceStatus, error) {
+	composeCmd := c.composeCmd
 	parts := strings.Split(composeCmd, " ")
 	args := append(parts, "-f", projectDir+"/docker-compose.yml", "ps", "--format", "json")
 
@@ -109,4 +97,37 @@ func ComposePs(ctx context.Context, projectDir string, composeCmd string) ([]Ser
 	}
 
 	return services, nil
+}
+
+// --- Legacy functions for backwards compatibility (will be deprecated later)
+func ComposeUp(ctx context.Context, projectDir string, composeCmd string) error {
+	c, err := NewClient(composeCmd)
+	if err != nil {
+		return err
+	}
+	return c.ComposeUp(ctx, projectDir)
+}
+
+func ComposeDown(ctx context.Context, projectDir string, composeCmd string) error {
+	c, err := NewClient(composeCmd)
+	if err != nil {
+		return err
+	}
+	return c.ComposeDown(ctx, projectDir)
+}
+
+func ComposePull(ctx context.Context, projectDir string, composeCmd string) error {
+	c, err := NewClient(composeCmd)
+	if err != nil {
+		return err
+	}
+	return c.ComposePull(ctx, projectDir)
+}
+
+func ComposePs(ctx context.Context, projectDir string, composeCmd string) ([]ServiceStatus, error) {
+	c, err := NewClient(composeCmd)
+	if err != nil {
+		return nil, err
+	}
+	return c.ComposePs(ctx, projectDir)
 }

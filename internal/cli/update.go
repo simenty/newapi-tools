@@ -99,7 +99,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check Docker is available
-	client, err := docker.NewClient()
+	client, err := docker.NewClient(cfg.Docker.ComposeCmd)
 	if err != nil {
 		return apperr.Wrap(apperr.CodeDockerNotFound, "", err)
 	}

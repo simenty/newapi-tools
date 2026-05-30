@@ -17,15 +17,36 @@ import (
 // Client provides Docker operations via the CLI.
 type Client struct {
 	dockerPath string
+	composeCmd string
+}
+
+// DockerClient defines the interface for Docker operations, enabling mock implementations for testing.
+type DockerClient interface {
+	Close() error
+	IsAvailable() bool
+	ContainerList(ctx context.Context) ([]ContainerInfo, error)
+	ContainerInspect(ctx context.Context, name string) (string, error)
+	ContainerStart(ctx context.Context, name string) error
+	ContainerStop(ctx context.Context, name string) error
+	ContainerRemove(ctx context.Context, name string) error
+	ImagePull(ctx context.Context, ref string) error
+	FindContainerByName(ctx context.Context, name string) (*ContainerInfo, error)
+	ComposeUp(ctx context.Context, projectDir string) error
+	ComposeDown(ctx context.Context, projectDir string) error
+	ComposePull(ctx context.Context, projectDir string) error
+	ComposePs(ctx context.Context, projectDir string) ([]ServiceStatus, error)
 }
 
 // NewClient creates a new Docker client by locating the docker binary.
-func NewClient() (*Client, error) {
+func NewClient(composeCmd string) (*Client, error) {
 	path, err := exec.LookPath("docker")
 	if err != nil {
 		return nil, fmt.Errorf("docker not found in PATH: %w", err)
 	}
-	return &Client{dockerPath: path}, nil
+	if composeCmd == "" {
+		composeCmd = "docker compose"
+	}
+	return &Client{dockerPath: path, composeCmd: composeCmd}, nil
 }
 
 // Close is a no-op for CLI-based client.

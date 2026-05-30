@@ -68,8 +68,10 @@ var checks = []Check{
 		FixHint: "请先安装 Docker: https://docs.docker.com/get-docker/",
 	},
 	{
-		Name:    "docker-daemon",
-		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkDockerDaemon() },
+		Name: "docker-daemon",
+		Run: func(ctx context.Context, cfg *core.Config) checkResult {
+			return checkDockerDaemon(cfg.Docker.ComposeCmd)
+		},
 		Fix:     nil,
 		FixHint: "请启动 Docker daemon (例如: sudo systemctl start docker)",
 	},
@@ -92,20 +94,26 @@ var checks = []Check{
 		FixHint: "运行 'newapi-tools install' 生成 .env 文件",
 	},
 	{
-		Name:    "new-api-container",
-		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkContainer(ctx, "new-api") },
+		Name: "new-api-container",
+		Run: func(ctx context.Context, cfg *core.Config) checkResult {
+			return checkContainer(ctx, "new-api", cfg.Docker.ComposeCmd)
+		},
 		Fix:     composeUpFix,
 		FixHint: "",
 	},
 	{
-		Name:    "mysql-container",
-		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkContainer(ctx, "mysql") },
+		Name: "mysql-container",
+		Run: func(ctx context.Context, cfg *core.Config) checkResult {
+			return checkContainer(ctx, "mysql", cfg.Docker.ComposeCmd)
+		},
 		Fix:     composeUpFix,
 		FixHint: "",
 	},
 	{
-		Name:    "redis-container",
-		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkContainer(ctx, "redis") },
+		Name: "redis-container",
+		Run: func(ctx context.Context, cfg *core.Config) checkResult {
+			return checkContainer(ctx, "redis", cfg.Docker.ComposeCmd)
+		},
 		Fix:     composeUpFix,
 		FixHint: "",
 	},
@@ -254,8 +262,8 @@ func checkDockerBinary() checkResult {
 	}
 }
 
-func checkDockerDaemon() checkResult {
-	c, err := docker.NewClient()
+func checkDockerDaemon(composeCmd string) checkResult {
+	c, err := docker.NewClient(composeCmd)
 	if err != nil {
 		return checkResult{
 			Name:    "docker-daemon",
@@ -381,9 +389,9 @@ func checkEnvFile(home string) checkResult {
 	}
 }
 
-func checkContainer(ctx context.Context, name string) checkResult {
+func checkContainer(ctx context.Context, name string, composeCmd string) checkResult {
 	checkName := name + "-container"
-	c, err := docker.NewClient()
+	c, err := docker.NewClient(composeCmd)
 	if err != nil {
 		return checkResult{
 			Name:    checkName,

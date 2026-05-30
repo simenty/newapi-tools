@@ -84,7 +84,7 @@ func runRestore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Connect to Docker to stop/start containers
-	client, err := docker.NewClient()
+	client, err := docker.NewClient(cfg.Docker.ComposeCmd)
 	if err != nil {
 		return apperr.Wrap(apperr.CodeDockerNotFound, "", err)
 	}

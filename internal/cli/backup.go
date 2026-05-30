@@ -58,7 +58,7 @@ func runBackup(cmd *cobra.Command, args []string) error {
 	}
 
 	// Check Docker availability (needed to dump MySQL)
-	client, dockerErr := docker.NewClient()
+	client, dockerErr := docker.NewClient(cfg.Docker.ComposeCmd)
 	if dockerErr != nil {
 		ui.L().Warn("docker not available, skipping database dump", "error", dockerErr)
 		client = nil

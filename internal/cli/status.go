@@ -105,7 +105,7 @@ func clearScreen() {
 
 // showStatus displays the status once (called by both single-shot and watch modes).
 func showStatus(cmd *cobra.Command, cfg *core.Config, showAll bool, activeInstance *instance.Instance) error {
-	client, err := docker.NewClient()
+	client, err := docker.NewClient(cfg.Docker.ComposeCmd)
 	if err != nil {
 		return apperr.Wrap(apperr.CodeDockerNotFound, "", err)
 	}
