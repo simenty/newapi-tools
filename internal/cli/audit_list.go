@@ -11,6 +11,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var auditCmd = &cobra.Command{
+	Use:   "audit",
+	Short: "Audit log management",
+	Long:  `Manage audit logs for newapi-tools. View command execution history.`,
+}
+
 var auditListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List audit log entries",
@@ -25,6 +31,7 @@ func init() {
 	auditListCmd.Flags().Bool("json", false, "output as JSON")
 
 	auditCmd.AddCommand(auditListCmd)
+	rootCmd.AddCommand(auditCmd)
 }
 
 func runAuditList(cmd *cobra.Command, args []string) error {

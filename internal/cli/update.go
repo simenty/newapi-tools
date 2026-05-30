@@ -13,6 +13,7 @@ import (
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
 	"github.com/Bonus520/newapi-tools/internal/i18n"
+	"github.com/Bonus520/newapi-tools/internal/selfupdate"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -321,9 +322,9 @@ func runSelfUpdate(ctx context.Context) error {
 	opts := selfupdate.SelfUpdateOptions{
 		CurrentBinary: currentBinary,
 		Repo:          "Bonus520/newapi-tools",
-		OnProgress: func(written, total int64) {
-			if total > 0 {
-				pct := float64(written) / float64(total) * 100
+		OnProgress: func(stage string, pct float64) {
+			// stage is not used for now
+			if pct > 0 {
 				fmt.Printf("\rDownloading... %.1f%%", pct)
 			}
 		},

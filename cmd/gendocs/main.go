@@ -41,7 +41,7 @@ func main() {
 				continue
 			}
 
-			for i, name := range vspec.Names {
+			for i := range vspec.Names {
 				// Get the comment
 				var comment string
 				if vspec.Comment != nil && len(vspec.Comment.List) > i {

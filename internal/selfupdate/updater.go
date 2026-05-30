@@ -53,15 +53,14 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 		return nil, fmt.Errorf("no asset found for %s", assetName)
 	}
 
-	// Create temporary file for download
+	// Create temp file for download - with secure permissions
 	tmpFile, err := os.CreateTemp("", "newapi-update-*.tmp")
 	if err != nil {
 		return nil, fmt.Errorf("create temp file: %w", err)
 	}
 	tmpPath := tmpFile.Name()
 	tmpFile.Close()
-	
-	// Set secure permissions first (read/write only for owner)
+	// Set secure permissions first
 	if err := os.Chmod(tmpPath, 0600); err != nil {
 		os.Remove(tmpPath)
 		return nil, fmt.Errorf("set temp file permissions: %w", err)
@@ -98,7 +97,7 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 }
 
 // downloadAsset downloads the specified asset to dest file
-func downloadAsset(ctx context.Context, asset Asset, dest string, onProgress func(int64, int64)) error {
+func downloadAsset(ctx context.Context, asset *Asset, dest string, onProgress func(stage string, pct float64)) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", asset.BrowserDownloadURL, nil)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
@@ -116,7 +115,7 @@ func downloadAsset(ctx context.Context, asset Asset, dest string, onProgress fun
 		return fmt.Errorf("unexpected status: %d", resp.StatusCode)
 	}
 
-	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0755)
+	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("open dest file: %w", err)
 	}
@@ -131,8 +130,9 @@ func downloadAsset(ctx context.Context, asset Asset, dest string, onProgress fun
 				return fmt.Errorf("write file: %w", err)
 			}
 			written += int64(n)
-			if onProgress != nil {
-				onProgress(written, asset.Size)
+			if onProgress != nil && asset.Size > 0 {
+				pct := float64(written) / float64(asset.Size) * 100
+				onProgress("download", pct)
 			}
 		}
 		if err == io.EOF {
@@ -148,7 +148,7 @@ func downloadAsset(ctx context.Context, asset Asset, dest string, onProgress fun
 
 // verifySHA256 verifies the SHA256 hash of the downloaded file
 // Tries to read from <asset>.sha256 file from GitHub Release
-func verifySHA256(ctx context.Context, filePath string, asset Asset) error {
+func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 	// Calculate hash of downloaded file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -167,7 +167,7 @@ func verifySHA256(ctx context.Context, filePath string, asset Asset) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", sha256URL, nil)
 	if err != nil {
 		fmt.Printf("Warning: Could not create SHA256 request: %v\n", err)
-		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
 		return nil
 	}
@@ -177,7 +177,7 @@ func verifySHA256(ctx context.Context, filePath string, asset Asset) error {
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != http.StatusOK {
 		fmt.Printf("Warning: SHA256 checksum file not available (status: %d)\n", resp.StatusCode)
-		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
 		if resp != nil {
 			resp.Body.Close()
@@ -190,7 +190,7 @@ func verifySHA256(ctx context.Context, filePath string, asset Asset) error {
 	checksumData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Printf("Warning: Could not read SHA256 file: %v\n", err)
-		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
 		return nil
 	}
@@ -199,7 +199,7 @@ func verifySHA256(ctx context.Context, filePath string, asset Asset) error {
 	parts := strings.Fields(string(checksumData))
 	if len(parts) < 1 {
 		fmt.Printf("Warning: Invalid SHA256 file format\n")
-		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
 		return nil
 	}

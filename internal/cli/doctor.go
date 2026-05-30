@@ -29,6 +29,7 @@ var doctorCmd = &cobra.Command{
 func init() {
 	doctorCmd.Flags().Bool("fix", false, "attempt to auto-fix detected issues")
 	doctorCmd.Flags().Bool("json", false, "output results in JSON format")
+	doctorCmd.Flags().BoolP("verbose", "v", false, "show detailed diagnostic info for each check")
 
 	rootCmd.AddCommand(doctorCmd)
 }
@@ -38,6 +39,16 @@ type checkResult struct {
 	Name    string
 	Status  string // "OK", "WARN", "FAIL", "SKIP"
 	Message string
+	Detail  *VerboseCheck // Detailed diagnostic info (--verbose)
+}
+
+// VerboseCheck contains detailed info for a check (--verbose mode).
+type VerboseCheck struct {
+	FilePath  string // File path involved in the check (if any)
+	Command   string // Command executed (if any)
+	Expected  string // Expected value
+	Actual    string // Actual value
+	RawOutput string // Raw command output (if any)
 }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
@@ -48,6 +59,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 
 	fix, _ := cmd.Flags().GetBool("fix")
 	jsonOut, _ := cmd.Flags().GetBool("json")
+	verbose, _ := cmd.Flags().GetBool("verbose")
 
 	fmt.Println("Running diagnostics...")
 	fmt.Println()
@@ -91,11 +103,11 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	// --- Check 12: Docker group membership ---
 	results = append(results, checkDockerGroupMembership())
 
-	// --- Output results ---
+	// ---- Output results ----
 	if jsonOut {
-		printDoctorJSON(results)
+		printDoctorJSON(results, verbose)
 	} else {
-		printDoctorTable(results)
+		printDoctorTable(results, verbose)
 	}
 
 	// Count failures
@@ -140,9 +152,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			results = append(results, checkDockerGroupMembership())
 
 			if jsonOut {
-				printDoctorJSON(results)
+				printDoctorJSON(results, verbose)
 			} else {
-				printDoctorTable(results)
+				printDoctorTable(results, verbose)
 			}
 
 			// Recount
@@ -176,76 +188,219 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 func checkDockerBinary() checkResult {
 	path, err := exec.LookPath("docker")
 	if err != nil {
-		return checkResult{"docker binary", "FAIL", "docker not found in PATH"}
+		return checkResult{
+			Name:    "docker binary",
+			Status:  "FAIL",
+			Message: "docker not found in PATH",
+			Detail: &VerboseCheck{
+				Command:  "docker (PATH lookup)",
+				Expected: "docker found in PATH",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
-	return checkResult{"docker binary", "OK", path}
+	return checkResult{
+		Name:    "docker binary",
+		Status:  "OK",
+		Message: path,
+		Detail: &VerboseCheck{
+			FilePath: path,
+			Expected: "docker binary exists",
+			Actual:   fmt.Sprintf("found at: %s", path),
+		},
+	}
 }
 
 func checkDockerDaemon() checkResult {
 	c, err := docker.NewClient()
 	if err != nil {
-		return checkResult{"docker daemon", "FAIL", err.Error()}
+		return checkResult{
+			Name:    "docker daemon",
+			Status:  "FAIL",
+			Message: err.Error(),
+			Detail: &VerboseCheck{
+				Command:  "docker.NewClient()",
+				Expected: "successfully connected to Docker daemon",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
 	defer c.Close()
 
 	if !c.IsAvailable() {
-		return checkResult{"docker daemon", "FAIL", "docker daemon is not running"}
+		return checkResult{
+			Name:    "docker daemon",
+			Status:  "FAIL",
+			Message: "docker daemon is not running",
+			Detail: &VerboseCheck{
+				Command:  "docker.IsAvailable()",
+				Expected: "daemon is running",
+				Actual:   "daemon not responding",
+			},
+		}
 	}
-	return checkResult{"docker daemon", "OK", "daemon is accessible"}
+	return checkResult{
+		Name:    "docker daemon",
+		Status:  "OK",
+		Message: "daemon is accessible",
+		Detail: &VerboseCheck{
+			Expected: "daemon accessible",
+			Actual:   "daemon connected",
+		},
+	}
 }
 
 func checkHomeDir(home string) checkResult {
 	if home == "" {
-		return checkResult{"home directory", "WARN", "not configured"}
+		return checkResult{
+			Name:    "home directory",
+			Status:  "WARN",
+			Message: "not configured",
+			Detail: &VerboseCheck{
+				Expected: "home directory configured",
+				Actual:   "home is empty",
+			},
+		}
 	}
 	if _, err := os.Stat(home); os.IsNotExist(err) {
-		return checkResult{"home directory", "FAIL", fmt.Sprintf("%s does not exist", home)}
+		return checkResult{
+			Name:    "home directory",
+			Status:  "FAIL",
+			Message: fmt.Sprintf("%s does not exist", home),
+			Detail: &VerboseCheck{
+				FilePath: home,
+				Expected: "directory exists",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
-	return checkResult{"home directory", "OK", home}
+	return checkResult{
+		Name:    "home directory",
+		Status:  "OK",
+		Message: home,
+		Detail: &VerboseCheck{
+			FilePath: home,
+			Expected: "directory exists",
+			Actual:   fmt.Sprintf("directory exists at: %s", home),
+		},
+	}
 }
 
 func checkComposeFile(home string) checkResult {
 	path := filepath.Join(home, "docker-compose.yml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return checkResult{"docker-compose.yml", "FAIL",
-			fmt.Sprintf("%s not found — run 'newapi-tools install'", path)}
+		return checkResult{
+			Name:    "docker-compose.yml",
+			Status:  "FAIL",
+			Message: fmt.Sprintf("%s not found — run 'newapi-tools install'", path),
+			Detail: &VerboseCheck{
+				FilePath: path,
+				Expected: "docker-compose.yml exists",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
-	return checkResult{"docker-compose.yml", "OK", path}
+	return checkResult{
+		Name:    "docker-compose.yml",
+		Status:  "OK",
+		Message: path,
+		Detail: &VerboseCheck{
+			FilePath: path,
+			Expected: "file exists",
+			Actual:   fmt.Sprintf("found at: %s", path),
+		},
+	}
 }
 
 func checkEnvFile(home string) checkResult {
 	path := filepath.Join(home, ".env")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return checkResult{".env file", "WARN",
-			fmt.Sprintf("%s not found — credentials may be missing", path)}
+		return checkResult{
+			Name:    ".env file",
+			Status:  "WARN",
+			Message: fmt.Sprintf("%s not found — credentials may be missing", path),
+			Detail: &VerboseCheck{
+				FilePath: path,
+				Expected: ".env exists",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
-	return checkResult{".env file", "OK", path}
+	return checkResult{
+		Name:    ".env file",
+		Status:  "OK",
+		Message: path,
+		Detail: &VerboseCheck{
+			FilePath: path,
+			Expected: "file exists",
+			Actual:   fmt.Sprintf("found at: %s", path),
+		},
+	}
 }
 
 func checkContainer(ctx context.Context, name string) checkResult {
 	c, err := docker.NewClient()
 	if err != nil {
-		return checkResult{name + " container", "SKIP", "docker unavailable"}
+		return checkResult{
+			Name:    name + " container",
+			Status:  "SKIP",
+			Message: "docker unavailable",
+			Detail: &VerboseCheck{
+				Command:  "docker.NewClient()",
+				Expected: "docker available",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
 	defer c.Close()
 
 	containers, listErr := c.ContainerList(ctx)
 	if listErr != nil {
-		return checkResult{name + " container", "WARN",
-			fmt.Sprintf("failed to list containers: %v", listErr)}
+		return checkResult{
+			Name:    name + " container",
+			Status:  "WARN",
+			Message: fmt.Sprintf("failed to list containers: %v", listErr),
+			Detail: &VerboseCheck{
+				Command:  "docker.ContainerList()",
+				Expected: "container list retrieved",
+				Actual:   fmt.Sprintf("err: %v", listErr),
+			},
+		}
 	}
 
 	for _, ctr := range containers {
 		if strings.Contains(ctr.Name, name) {
 			if ctr.State == "running" {
-				return checkResult{name + " container", "OK",
-					fmt.Sprintf("%s (%s)", ctr.Image, ctr.Status)}
+				return checkResult{
+					Name:    name + " container",
+					Status:  "OK",
+					Message: fmt.Sprintf("%s (%s)", ctr.Image, ctr.Status),
+					Detail: &VerboseCheck{
+						Expected: "container is running",
+						Actual:   fmt.Sprintf("state=%s, status=%s, image=%s", ctr.State, ctr.Status, ctr.Image),
+					},
+				}
 			}
-			return checkResult{name + " container", "FAIL",
-				fmt.Sprintf("state=%s, status=%s", ctr.State, ctr.Status)}
+			return checkResult{
+				Name:    name + " container",
+				Status:  "FAIL",
+				Message: fmt.Sprintf("state=%s, status=%s", ctr.State, ctr.Status),
+				Detail: &VerboseCheck{
+					Expected: "container is running",
+					Actual:   fmt.Sprintf("state=%s, status=%s", ctr.State, ctr.Status),
+				},
+			}
 		}
 	}
-	return checkResult{name + " container", "FAIL", "container not found"}
+	return checkResult{
+		Name:    name + " container",
+		Status:  "FAIL",
+		Message: "container not found",
+		Detail: &VerboseCheck{
+			Expected: fmt.Sprintf("container '%s' container exists", name),
+			Actual:   "container not found in list",
+		},
+	}
 }
 
 func checkHTTPHealth(port int) checkResult {
@@ -256,22 +411,56 @@ func checkHTTPHealth(port int) checkResult {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(url)
 	if err != nil {
-		return checkResult{"HTTP health", "WARN",
-			fmt.Sprintf("port %d not reachable: %v", port, err)}
+		return checkResult{
+			Name:    "HTTP health",
+			Status:  "WARN",
+			Message: fmt.Sprintf("port %d not reachable: %v", port, err),
+			Detail: &VerboseCheck{
+				Command:  fmt.Sprintf("GET %s", url),
+				Expected: "HTTP 200-499",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 500 {
-		return checkResult{"HTTP health", "OK",
-			fmt.Sprintf("port %d responded with HTTP %d", port, resp.StatusCode)}
+		return checkResult{
+			Name:    "HTTP health",
+			Status:  "OK",
+			Message: fmt.Sprintf("port %d responded with HTTP %d", port, resp.StatusCode),
+			Detail: &VerboseCheck{
+				FilePath: url,
+				Command:  fmt.Sprintf("GET %s", url),
+				Expected: "HTTP 200-499",
+				Actual:   fmt.Sprintf("HTTP %d", resp.StatusCode),
+			},
+		}
 	}
-	return checkResult{"HTTP health", "WARN",
-		fmt.Sprintf("port %d returned HTTP %d", port, resp.StatusCode)}
+	return checkResult{
+		Name:    "HTTP health",
+		Status:  "WARN",
+		Message: fmt.Sprintf("port %d returned HTTP %d", port, resp.StatusCode),
+		Detail: &VerboseCheck{
+			FilePath: url,
+			Command:  fmt.Sprintf("GET %s", url),
+			Expected: "HTTP 200-499",
+			Actual:   fmt.Sprintf("HTTP %d", resp.StatusCode),
+		},
+	}
 }
 
 func checkDiskSpace(home string) checkResult {
 	if home == "" {
-		return checkResult{"disk space", "SKIP", "home not configured"}
+		return checkResult{
+			Name:    "disk space",
+			Status:  "SKIP",
+			Message: "home not configured",
+			Detail: &VerboseCheck{
+				Expected: "home directory configured",
+				Actual:   "home is empty",
+			},
+		}
 	}
 
 	// Try df first (Linux/macOS)
@@ -279,7 +468,16 @@ func checkDiskSpace(home string) checkResult {
 	if err == nil {
 		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 		if len(lines) >= 2 {
-			return checkResult{"disk space", "OK", strings.TrimSpace(lines[1])}
+			return checkResult{
+				Name:    "disk space",
+				Status:  "OK",
+				Message: strings.TrimSpace(lines[1]),
+				Detail: &VerboseCheck{
+					FilePath:  home,
+					Command:   "df -h " + home,
+					RawOutput: strings.TrimSpace(string(out)),
+				},
+			}
 		}
 	}
 
@@ -289,16 +487,32 @@ func checkDiskSpace(home string) checkResult {
 		lines := strings.Split(string(out2), "\n")
 		for _, l := range lines {
 			if strings.Contains(l, "bytes free") || strings.Contains(l, "字节可用") {
-				return checkResult{"disk space", "OK", strings.TrimSpace(l)}
+				return checkResult{
+					Name:    "disk space",
+					Status:  "OK",
+					Message: strings.TrimSpace(l),
+					Detail: &VerboseCheck{
+						FilePath:  home,
+						Command:   "cmd /c dir " + home,
+						RawOutput: strings.TrimSpace(string(out2)),
+					},
+				}
 			}
 		}
 	}
 
-	return checkResult{"disk space", "SKIP", "disk info unavailable on this platform"}
+	return checkResult{
+		Name:    "disk space",
+		Status:  "SKIP",
+		Message: "disk info unavailable on this platform",
+		Detail: &VerboseCheck{
+			Expected: "df/dir command available",
+			Actual:   "platform not supported",
+		},
+	}
 }
 
 func checkConfigPermissions(cfg *core.Config) checkResult {
-	// Check common config file locations
 	configPaths := []string{}
 	if cfg.NewAPI.Home != "" {
 		configPaths = append(configPaths,
@@ -306,15 +520,21 @@ func checkConfigPermissions(cfg *core.Config) checkResult {
 			filepath.Join(cfg.NewAPI.Home, "docker-compose.yml"),
 		)
 	}
-
-	// Also check the main config file if it exists
 	configFile := core.ConfigFileUsed()
 	if configFile != "" {
 		configPaths = append(configPaths, configFile)
 	}
 
 	if len(configPaths) == 0 {
-		return checkResult{"config permissions", "SKIP", "no config files to check"}
+		return checkResult{
+			Name:    "config permissions",
+			Status:  "SKIP",
+			Message: "no config files to check",
+			Detail: &VerboseCheck{
+				Expected: "config files to check",
+				Actual:   "no config files found",
+			},
+		}
 	}
 
 	var issues []string
@@ -325,23 +545,68 @@ func checkConfigPermissions(cfg *core.Config) checkResult {
 	}
 
 	if len(issues) > 0 {
-		return checkResult{"config permissions", "WARN", strings.Join(issues, "; ")}
+		return checkResult{
+			Name:    "config permissions",
+			Status:  "WARN",
+			Message: strings.Join(issues, "; "),
+			Detail: &VerboseCheck{
+				FilePath: strings.Join(configPaths, ", "),
+				Expected: "all configs have secure permissions (0600",
+				Actual:   strings.Join(issues, "; "),
+			},
+		}
 	}
-	return checkResult{"config permissions", "OK", "all config files have secure permissions"}
+	return checkResult{
+		Name:    "config permissions",
+		Status:  "OK",
+		Message: "all config files have secure permissions",
+		Detail: &VerboseCheck{
+			FilePath: strings.Join(configPaths, ", "),
+			Expected: "all configs have secure permissions",
+			Actual:   "all permissions OK",
+		},
+	}
 }
 
 func checkDockerGroupMembership() checkResult {
 	inGroup, err := security.CheckDockerGroup()
 	if err != nil {
-		return checkResult{"docker group", "WARN", fmt.Sprintf("cannot check: %v", err)}
+		return checkResult{
+			Name:    "docker group",
+			Status:  "WARN",
+			Message: fmt.Sprintf("cannot check: %v", err),
+			Detail: &VerboseCheck{
+				Command:  "security.CheckDockerGroup()",
+				Expected: "check successful",
+				Actual:   fmt.Sprintf("err: %v", err),
+			},
+		}
 	}
 	if !inGroup {
-		return checkResult{"docker group", "WARN", "current user is not in 'docker' group — may need sudo"}
+		return checkResult{
+			Name:    "docker group",
+			Status:  "WARN",
+			Message: "current user is not in 'docker' group — may need sudo",
+			Detail: &VerboseCheck{
+				Command:  "security.CheckDockerGroup()",
+				Expected: "user in docker group",
+				Actual:   "user not in docker group",
+			},
+		}
 	}
-	return checkResult{"docker group", "OK", "current user is in 'docker' group"}
+	return checkResult{
+		Name:    "docker group",
+		Status:  "OK",
+		Message: "current user is in 'docker' group",
+		Detail: &VerboseCheck{
+			Command:  "security.CheckDockerGroup()",
+			Expected: "user in docker group",
+			Actual:   "user in docker group",
+		},
+	}
 }
 
-func printDoctorTable(results []checkResult) {
+func printDoctorTable(results []checkResult, verbose bool) {
 	maxName := 20
 	for _, r := range results {
 		if len(r.Name) > maxName {
@@ -354,20 +619,67 @@ func printDoctorTable(results []checkResult) {
 
 	for _, r := range results {
 		fmt.Printf("%-*s  %-4s  %s\n", maxName, r.Name, r.Status, r.Message)
+		if verbose && r.Detail != nil {
+			printVerboseDetail(r.Detail, maxName)
+		}
 	}
 }
 
-func printDoctorJSON(results []checkResult) {
+func printVerboseDetail(d *VerboseCheck, indent int) {
+	prefix := strings.Repeat(" ", indent+2+4+2)
+	if d.FilePath != "" {
+		fmt.Printf("%s[FILE]: %s\n", prefix, d.FilePath)
+	}
+	if d.Command != "" {
+		fmt.Printf("%s[CMD]: %s\n", prefix, d.Command)
+	}
+	if d.Expected != "" {
+		fmt.Printf("%s[EXPECTED]: %s\n", prefix, d.Expected)
+	}
+	if d.Actual != "" {
+		fmt.Printf("%s[ACTUAL]: %s\n", prefix, d.Actual)
+	}
+	if d.RawOutput != "" {
+		fmt.Printf("%s[RAW]:\n%s\n", prefix, d.RawOutput)
+	}
+}
+
+func printDoctorJSON(results []checkResult, verbose bool) {
 	fmt.Println("[")
 	for i, r := range results {
 		comma := ","
 		if i == len(results)-1 {
 			comma = ""
 		}
-		fmt.Printf("  {\"check\": %q, \"status\": %q, \"message\": %q}%s\n",
-			r.Name, r.Status, r.Message, comma)
+		if verbose && r.Detail != nil {
+			fmt.Printf("  {\"check\": %q, \"status\": %q, \"message\": %q, \"detail\": %s}%s\n",
+				r.Name, r.Status, r.Message, detailToJSON(r.Detail), comma)
+		} else {
+			fmt.Printf("  {\"check\": %q, \"status\": %q, \"message\": %q}%s\n",
+				r.Name, r.Status, r.Message, comma)
+		}
 	}
 	fmt.Println("]")
+}
+
+func detailToJSON(d *VerboseCheck) string {
+	parts := []string{}
+	if d.FilePath != "" {
+		parts = append(parts, fmt.Sprintf("\"file_path\": %q", d.FilePath))
+	}
+	if d.Command != "" {
+		parts = append(parts, fmt.Sprintf("\"command\": %q", d.Command))
+	}
+	if d.Expected != "" {
+		parts = append(parts, fmt.Sprintf("\"expected\": %q", d.Expected))
+	}
+	if d.Actual != "" {
+		parts = append(parts, fmt.Sprintf("\"actual\": %q", d.Actual))
+	}
+	if d.RawOutput != "" {
+		parts = append(parts, fmt.Sprintf("\"raw_output\": %q", d.RawOutput))
+	}
+	return "{" + strings.Join(parts, ", ") + "}"
 }
 
 // ---- Auto-fix logic ----
