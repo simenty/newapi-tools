@@ -190,6 +190,8 @@ The bundled `plugins/newapi/` plugin provides 7 commands as shell scripts, with 
 
 | Version | Highlights |
 |---------|-----------|
+| V3.2.0  | Self-update (`update --check` / `--self`), Audit log (`audit list`), Multi-instance management (`instance add/list/switch/remove`), Auto-generated error code docs |
+| V3.1.0  | - |
 | V3.0.0  | mirror command (add/remove/list/apply/test/reset/builtin), 6 built-in CN mirrors, 83 tests |
 | V3.0-rc | 9 commands Go-native (incl. config + doctor --fix), 78 tests, Git v2/main split |
 | V3.0-a3 | install + status Go-native, newapi Shell plugin, 52 tests |
