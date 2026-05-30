@@ -33,6 +33,7 @@ var installCmd = &cobra.Command{
 func init() {
 	installCmd.Flags().Int("port", 0, "new-api listen port (default from config)")
 	installCmd.Flags().String("image", "", "new-api Docker image (default from config)")
+	installCmd.Flags().String("domain", "", "custom domain for new-api (e.g. newapi.example.com)")
 	installCmd.Flags().Bool("force", false, "force reinstall even if already installed")
 	installCmd.Flags().String("mirror", "", "registry mirror to use for this pull (e.g. tuna, aliyun, or a full URL)")
 	installCmd.Flags().Bool("no-auto-mirror", false, "skip auto-detecting and applying the fastest registry mirror")
@@ -81,6 +82,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	if image, _ := cmd.Flags().GetString("image"); image != "" {
 		cfg.NewAPI.DockerImage = image
 	}
+	if domain, _ := cmd.Flags().GetString("domain"); domain != "" {
+		cfg.NewAPI.Domain = domain
+	}
 	if healthTimeout, _ := cmd.Flags().GetInt("health-timeout"); healthTimeout != 0 {
 		cfg.NewAPI.HealthTimeout = healthTimeout
 	}
@@ -92,6 +96,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	// Interactive wizard
 	opts := installOptions{
 		Port:        cfg.NewAPI.Port,
+		Domain:      cfg.NewAPI.Domain, // 从 Config 读取
 		DBType:      "mysql",
 		RedisAddr:   "redis:6379",
 		DockerImage: cfg.NewAPI.DockerImage,
@@ -104,9 +109,16 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		cfg.NewAPI.Port = opts.Port
+		cfg.NewAPI.Domain = opts.Domain // 保存 Domain
 		if opts.DockerImage != "" {
 			cfg.NewAPI.DockerImage = opts.DockerImage
 		}
+	}
+
+	// Save updated config
+	ui.PrintStep(2, 4, "install.saving_config") // 我们新增一个步骤提示
+	if err := core.WriteConfig(cfg, core.ConfigFilePath()); err != nil {
+		ui.L().Warn("failed to save config file", "error", err)
 	}
 
 	// Apply mirror if specified

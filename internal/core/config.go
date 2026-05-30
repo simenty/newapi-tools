@@ -25,7 +25,9 @@ type NewAPIConfig struct {
 	Port          int    `mapstructure:"port"`
 	DockerImage   string `mapstructure:"docker_image"`
 	BackupDir     string `mapstructure:"backup_dir"`
-	HealthTimeout int    `mapstructure:"health_timeout"`
+	Domain        string `mapstructure:"domain"`         // 新增
+	HealthTimeout int    `mapstructure:"health_timeout"` // 新增，默认 120
+	MaxBackups    int    `mapstructure:"max_backups"`    // 新增，默认 10
 }
 
 // DockerConfig holds Docker-related configuration.
@@ -52,7 +54,9 @@ func DefaultConfig() *Config {
 			Port:          3000,
 			DockerImage:   "calciumion/new-api:latest",
 			BackupDir:     "/opt/newapi/backups",
+			Domain:        "", // 空字符串表示未设置
 			HealthTimeout: 120,
+			MaxBackups:    10,
 		},
 		Docker: DockerConfig{
 			ComposeCmd: "docker compose",
@@ -131,7 +135,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("newapi.port", defaults.NewAPI.Port)
 	v.SetDefault("newapi.docker_image", defaults.NewAPI.DockerImage)
 	v.SetDefault("newapi.backup_dir", defaults.NewAPI.BackupDir)
+	v.SetDefault("newapi.domain", defaults.NewAPI.Domain)
 	v.SetDefault("newapi.health_timeout", defaults.NewAPI.HealthTimeout)
+	v.SetDefault("newapi.max_backups", defaults.NewAPI.MaxBackups)
 	v.SetDefault("docker.compose_cmd", defaults.Docker.ComposeCmd)
 	v.SetDefault("log.level", defaults.Log.Level)
 	v.SetDefault("log.format", defaults.Log.Format)
@@ -169,7 +175,9 @@ func WriteConfig(cfg *Config, path string) error {
 			"port":           cfg.NewAPI.Port,
 			"docker_image":   cfg.NewAPI.DockerImage,
 			"backup_dir":     cfg.NewAPI.BackupDir,
+			"domain":         cfg.NewAPI.Domain,
 			"health_timeout": cfg.NewAPI.HealthTimeout,
+			"max_backups":    cfg.NewAPI.MaxBackups,
 		},
 		"docker": map[string]interface{}{
 			"compose_cmd": cfg.Docker.ComposeCmd,
