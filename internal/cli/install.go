@@ -17,6 +17,7 @@ import (
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
 	"github.com/Bonus520/newapi-tools/internal/i18n"
+	"github.com/Bonus520/newapi-tools/internal/instance"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +36,7 @@ func init() {
 	installCmd.Flags().String("mirror", "", "registry mirror to use for this pull (e.g. tuna, aliyun, or a full URL)")
 	installCmd.Flags().Bool("no-auto-mirror", false, "skip auto-detecting and applying the fastest registry mirror")
 	installCmd.Flags().Bool("interactive", false, "run interactive installation wizard")
+	installCmd.Flags().String("instance", "", "instance name to install (for multi-instance management)")
 
 	rootCmd.AddCommand(installCmd)
 }
@@ -53,6 +55,21 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	cfg := core.GetConfig()
 	if cfg == nil {
 		return fmt.Errorf("configuration not loaded")
+	}
+
+	instanceName, _ := cmd.Flags().GetString("instance")
+	var inst *instance.Instance
+	if instanceName != "" {
+		store := instance.NewStore("")
+		var err error
+		inst, err = store.Get(instanceName)
+		if err != nil {
+			return fmt.Errorf("instance not found, please create it first with 'newapi-tools instance add %s", instanceName)
+		}
+		// Apply instance settings from the instance's config
+		cfg.NewAPI.Home = inst.Home
+		cfg.NewAPI.Port = inst.Port
+		cfg.NewAPI.DockerImage = inst.DockerImage
 	}
 
 	// Apply CLI flag overrides
@@ -158,7 +175,15 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Step [2/4]: Generate configuration
 	ui.PrintStep(2, 4, "install.generating_compose")
-	composeContent := generateComposeYAML(cfg, opts)
+	var composeProjectName string
+	if instanceName != "" {
+		if inst != nil {
+			composeProjectName = inst.ComposeProject
+		} else {
+			composeProjectName = fmt.Sprintf("newapi-%s", instanceName)
+		}
+	}
+	composeContent := generateComposeYAML(cfg, opts, composeProjectName)
 	composePath := filepath.Join(cfg.NewAPI.Home, "docker-compose.yml")
 	if err := os.WriteFile(composePath, []byte(composeContent), 0644); err != nil {
 		return fmt.Errorf("failed to write docker-compose.yml: %w", err)
@@ -193,6 +218,21 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		"port", cfg.NewAPI.Port,
 		"image", cfg.NewAPI.DockerImage,
 	)
+
+	// Register to instance store if not already registered
+	if instanceName == "" {
+		// Default instance name
+		instanceName = "default"
+	}
+	if inst == nil {
+		store := instance.NewStore("")
+		newInst := instance.NewInstance(instanceName, cfg.NewAPI.Home, cfg.NewAPI.Port, cfg.NewAPI.DockerImage)
+		if err := store.Add(*newInst); err != nil {
+			fmt.Printf("Warning: could not register instance: %v\n", err)
+		} else {
+			fmt.Printf("Instance '%s' registered successfully\n", instanceName)
+		}
+	}
 	return nil
 }
 
@@ -357,7 +397,7 @@ func waitForHealth(port int) {
 
 // generateComposeYAML generates the docker-compose.yml content.
 // It supports multi-arch (arm64) and different database types based on opts.
-func generateComposeYAML(cfg *core.Config, opts installOptions) string {
+func generateComposeYAML(cfg *core.Config, opts installOptions, composeProjectName string) string {
 	// Determine platform directive for arm64
 	platformLine := ""
 	if runtime.GOARCH == "arm64" {
@@ -365,39 +405,51 @@ func generateComposeYAML(cfg *core.Config, opts installOptions) string {
 	}
 
 	// Build new-api service
+	newAPIContainerName := "new-api"
+	if composeProjectName != "" {
+		newAPIContainerName = fmt.Sprintf("%s-new-api", composeProjectName)
+	}
 	newAPIService := fmt.Sprintf(`  new-api:
     image: %s
-    container_name: new-api
+    container_name: %s
     restart: always
 %s    ports:
       - "%d:3000"
     env_file: .env
     volumes:
-      - ./data:/data`, cfg.NewAPI.DockerImage, platformLine, cfg.NewAPI.Port)
+      - ./data:/data`, cfg.NewAPI.DockerImage, newAPIContainerName, platformLine, cfg.NewAPI.Port)
 
 	// Build dependent services based on DB type
 	var services []string
 	services = append(services, newAPIService)
 
 	if opts.DBType == "mysql" {
-		services = append(services, `  mysql:
+		mysqlContainerName := "mysql"
+		if composeProjectName != "" {
+			mysqlContainerName = fmt.Sprintf("%s-mysql", composeProjectName)
+		}
+		services = append(services, fmt.Sprintf(`  mysql:
     image: mysql:8.0
-    container_name: mysql
+    container_name: %s
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: newapi
     volumes:
-      - ./mysql-data:/var/lib/mysql`)
+      - ./mysql-data:/var/lib/mysql`, mysqlContainerName))
 	}
 
 	// Always include Redis (new-api requires it)
-	services = append(services, `  redis:
+	redisContainerName := "redis"
+	if composeProjectName != "" {
+		redisContainerName = fmt.Sprintf("%s-redis", composeProjectName)
+	}
+	services = append(services, fmt.Sprintf(`  redis:
     image: redis:7
-    container_name: redis
+    container_name: %s
     restart: always
     volumes:
-      - ./redis-data:/data`)
+      - ./redis-data:/data`, redisContainerName))
 
 	// Build depends_on list
 	dependsOn := []string{}
@@ -407,12 +459,17 @@ func generateComposeYAML(cfg *core.Config, opts installOptions) string {
 	dependsOn = append(dependsOn, "      - redis")
 
 	// Assemble the final YAML
+	var topLevel string
+	if composeProjectName != "" {
+		topLevel = fmt.Sprintf(`name: %s
+`, composeProjectName)
+	}
 	yaml := fmt.Sprintf(`version: '3.8'
-services:
+%sservices:
 %s
     depends_on:
 %s
-`, strings.Join(services, "\n"), strings.Join(dependsOn, "\n"))
+`, topLevel, strings.Join(services, "\n"), strings.Join(dependsOn, "\n"))
 
 	return yaml
 }

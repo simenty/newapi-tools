@@ -13,6 +13,7 @@ import (
 	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
 	"github.com/Bonus520/newapi-tools/internal/docker"
+	"github.com/Bonus520/newapi-tools/internal/instance"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -46,29 +47,29 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	showAll, _ := cmd.Flags().GetBool("all")
 
 	// --instance is a persistent flag on rootCmd; read it via InheritedFlags or root.
-	instance, _ := cmd.Root().PersistentFlags().GetString("instance")
+	instanceName, _ := cmd.Root().PersistentFlags().GetString("instance")
 
-	// --instance: stub for T05
-	if instance != "" {
-		fmt.Printf("instance support coming in T05 (requested: %s)\n", instance)
-		return nil
+	// --instance handling
+	var activeInstance *instance.Instance
+	var instanceErr error
+	if instanceName != "" {
+		store := instance.NewStore(instance.DefaultStorePath())
+		activeInstance, instanceErr = store.Get(instanceName)
+		if instanceErr != nil {
+			return instanceErr
+		}
 	}
 
-	if interval < 1 {
-		interval = 2
-	}
-
-	// Watch mode: loop until Ctrl+C
 	if watch {
-		return runWatchMode(cmd, cfg, interval, showAll)
+		return runWatchMode(cmd, cfg, interval, showAll, activeInstance)
 	}
 
 	// Single-shot mode
-	return showStatus(cmd, cfg, showAll)
+	return showStatus(cmd, cfg, showAll, activeInstance)
 }
 
 // runWatchMode continuously refreshes the status display until the user presses Ctrl+C.
-func runWatchMode(cmd *cobra.Command, cfg *core.Config, interval int, showAll bool) error {
+func runWatchMode(cmd *cobra.Command, cfg *core.Config, interval int, showAll bool, activeInstance *instance.Instance) error {
 	// Set up signal handling for graceful exit
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
@@ -78,7 +79,7 @@ func runWatchMode(cmd *cobra.Command, cfg *core.Config, interval int, showAll bo
 
 	// Show initial status immediately
 	clearScreen()
-	if err := showStatus(cmd, cfg, showAll); err != nil {
+	if err := showStatus(cmd, cfg, showAll, activeInstance); err != nil {
 		return err
 	}
 
@@ -89,7 +90,7 @@ func runWatchMode(cmd *cobra.Command, cfg *core.Config, interval int, showAll bo
 			return nil
 		case <-ticker.C:
 			clearScreen()
-			if err := showStatus(cmd, cfg, showAll); err != nil {
+			if err := showStatus(cmd, cfg, showAll, activeInstance); err != nil {
 				// In watch mode, print the error but keep watching
 				ui.PrintError(err)
 			}
@@ -103,7 +104,7 @@ func clearScreen() {
 }
 
 // showStatus displays the status once (called by both single-shot and watch modes).
-func showStatus(cmd *cobra.Command, cfg *core.Config, showAll bool) error {
+func showStatus(cmd *cobra.Command, cfg *core.Config, showAll bool, activeInstance *instance.Instance) error {
 	client, err := docker.NewClient()
 	if err != nil {
 		return apperr.Wrap(apperr.CodeDockerNotFound, "", err)
@@ -118,39 +119,63 @@ func showStatus(cmd *cobra.Command, cfg *core.Config, showAll bool) error {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	if showAll {
-		return showAllContainers(cmd.Context(), client, cfg, jsonOutput)
+		return showAllContainers(cmd.Context(), client, cfg, jsonOutput, activeInstance)
 	}
 
 	// Single container mode
-	container, err := client.FindContainerByName(cmd.Context(), "new-api")
-	if err != nil {
-		return fmt.Errorf("failed to list containers: %w", err)
+	var container *docker.ContainerInfo
+	if activeInstance != nil {
+		// Find container by compose project
+		allContainers, err := client.ContainerList(cmd.Context())
+		if err != nil {
+			return fmt.Errorf("failed to list containers: %w", err)
+		}
+		for _, c := range allContainers {
+			if c.ComposeProject == activeInstance.ComposeProject && (strings.Contains(c.Name, "new-api") || strings.Contains(c.Name, "newapi")) {
+				container = &c
+				break
+			}
+		}
+	} else {
+		// Find default container
+		container, err = client.FindContainerByName(cmd.Context(), "new-api")
+		if err != nil {
+			return fmt.Errorf("failed to list containers: %w", err)
+		}
 	}
 
 	if container == nil {
 		if jsonOutput {
 			fmt.Println(`{"status": "not_installed"}`)
 		} else {
-			fmt.Println("new-api is not installed.")
-			fmt.Println("Run 'newapi-tools install' to deploy new-api.")
+			if activeInstance != nil {
+				fmt.Printf("Instance '%s' is not installed.\n", activeInstance.Name)
+				fmt.Printf("Run 'newapi-tools install --instance %s' to deploy it.\n", activeInstance.Name)
+			} else {
+				fmt.Println("new-api is not installed.")
+				fmt.Println("Run 'newapi-tools install' to deploy new-api.")
+			}
 		}
 		return nil
 	}
 
 	// Get detailed state
-	state, _ := client.ContainerInspect(cmd.Context(), "new-api")
+	state, _ := client.ContainerInspect(cmd.Context(), container.Name)
 
 	// Try to get resource stats
 	var stats *docker.ContainerStats
 	if container.State == "running" {
-		stats, _ = docker.GetContainerStats("new-api")
+		stats, _ = docker.GetContainerStats(container.Name)
 	}
 
 	if jsonOutput {
-		statusJSON := fmt.Sprintf(`{"status": "%s", "container": "%s", "image": "%s", "state": "%s"`,
+		statusJSON := fmt.Sprintf(`{"status": "%s", "container": "%s", "image": "%s", "state": "%s"}`,
 			state, container.Name, container.Image, container.State)
 		if stats != nil {
 			statusJSON += fmt.Sprintf(`, "cpu": "%s", "mem": "%s"`, stats.CPUPerc, stats.MemPerc)
+		}
+		if activeInstance != nil {
+			statusJSON += fmt.Sprintf(`, "instance": %q`, activeInstance.Name)
 		}
 		statusJSON += "}"
 		fmt.Println(statusJSON)
@@ -159,13 +184,25 @@ func showStatus(cmd *cobra.Command, cfg *core.Config, showAll bool) error {
 
 	// Display status using the table UI
 	tbl := ui.NewTable("Property", "Value")
+	if activeInstance != nil {
+		tbl.AddRow("Instance", activeInstance.Name)
+	}
 	tbl.AddRow("Container", container.Name)
 	tbl.AddRow("Image", container.Image)
 	tbl.AddRow("State", container.State)
 	tbl.AddRow("Status", container.Status)
 	tbl.AddRow("Health", state)
-	tbl.AddRow("Home", cfg.NewAPI.Home)
-	tbl.AddRow("Port", fmt.Sprintf("%d", cfg.NewAPI.Port))
+	var homeDir string
+	var port int
+	if activeInstance != nil {
+		homeDir = activeInstance.Home
+		port = activeInstance.Port
+	} else {
+		homeDir = cfg.NewAPI.Home
+		port = cfg.NewAPI.Port
+	}
+	tbl.AddRow("Home", homeDir)
+	tbl.AddRow("Port", fmt.Sprintf("%d", port))
 	if stats != nil {
 		tbl.AddRow("CPU%", stats.CPUPerc)
 		tbl.AddRow("MEM%", stats.MemPerc)
@@ -179,7 +216,7 @@ func showStatus(cmd *cobra.Command, cfg *core.Config, showAll bool) error {
 }
 
 // showAllContainers displays the status of all newapi-related containers.
-func showAllContainers(ctx context.Context, client *docker.Client, cfg *core.Config, jsonOutput bool) error {
+func showAllContainers(ctx context.Context, client *docker.Client, cfg *core.Config, jsonOutput bool, activeInstance *instance.Instance) error {
 	containers, err := client.ContainerList(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list containers: %w", err)
@@ -188,7 +225,11 @@ func showAllContainers(ctx context.Context, client *docker.Client, cfg *core.Con
 	// Filter to newapi-related containers
 	var related []docker.ContainerInfo
 	for _, c := range containers {
-		if isRelatedContainer(c.Name) {
+		if activeInstance != nil {
+			if c.ComposeProject == activeInstance.ComposeProject {
+				related = append(related, c)
+			}
+		} else if isRelatedContainer(c.Name) {
 			related = append(related, c)
 		}
 	}

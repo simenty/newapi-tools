@@ -41,16 +41,17 @@ func (c *Client) IsAvailable() bool {
 
 // ContainerInfo holds summary information about a container.
 type ContainerInfo struct {
-	ID     string
-	Name   string
-	Image  string
-	State  string
-	Status string
+	ID             string
+	Name           string
+	Image          string
+	State          string
+	Status         string
+	ComposeProject string // compose project name (com.docker.compose.project label)
 }
 
 // ContainerList returns all containers, including stopped ones.
 func (c *Client) ContainerList(ctx context.Context) ([]ContainerInfo, error) {
-	cmd := exec.CommandContext(ctx, c.dockerPath, "ps", "-a", "--format", "{{.ID}}|{{.Names}}|{{.Image}}|{{.State}}|{{.Status}}")
+	cmd := exec.CommandContext(ctx, c.dockerPath, "ps", "-a", "--format", "{{.ID}}|{{.Names}}|{{.Image}}|{{.State}}|{{.Status}}|{{.Label \"com.docker.compose.project\"}}")
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list containers: %w", err)
@@ -61,16 +62,17 @@ func (c *Client) ContainerList(ctx context.Context) ([]ContainerInfo, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 5)
+		parts := strings.SplitN(line, "|", 6) // now 6 parts including compose project
 		if len(parts) < 5 {
 			continue
 		}
 		containers = append(containers, ContainerInfo{
-			ID:     parts[0],
-			Name:   parts[1],
-			Image:  parts[2],
-			State:  parts[3],
-			Status: parts[4],
+			ID:             parts[0],
+			Name:           parts[1],
+			Image:          parts[2],
+			State:          parts[3],
+			Status:         parts[4],
+			ComposeProject: parts[5],
 		})
 	}
 
