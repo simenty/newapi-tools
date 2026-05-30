@@ -137,6 +137,9 @@ newapi:
   port: 3000                 # Host port for new-api
   docker_image: calciumion/new-api:latest
   backup_dir: /opt/newapi/backups
+  domain: ""                 # Custom domain for new-api (optional)
+  health_timeout: 120        # Health check timeout in seconds
+  max_backups: 10            # Maximum number of backups to keep
 
 docker:
   compose_cmd: "docker compose"
@@ -144,6 +147,9 @@ docker:
 log:
   level: info                # debug | info | warn | error
   format: text               # text | json
+
+instance:
+  active: ""                 # Current active instance name
 ```
 
 Override via CLI flags or `config set`:

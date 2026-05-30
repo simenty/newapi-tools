@@ -13,6 +13,7 @@ newapi-tools doctor [flags]
 | 标志 | 默认值 | 说明 |
 |------|--------|------|
 | `--fix` | false | 自动修复可修复的问题 |
+| `--verbose` | false | 显示详细的诊断信息（包括文件路径、命令输出等） |
 
 ## 检查项
 
@@ -37,7 +38,22 @@ newapi-tools doctor
 
 # 检查并自动修复
 newapi-tools doctor --fix
+
+# 显示详细的诊断信息
+newapi-tools doctor --verbose
+
+# 显示详细信息并尝试自动修复
+newapi-tools doctor --verbose --fix
 ```
+
+## --verbose 输出内容
+
+使用 `--verbose` 时会显示：
+- 每个检查的详细状态
+- 检查涉及的文件路径
+- 执行的命令
+- 期望的值 vs. 实际值
+- 原始命令输出
 
 ## 输出示例
 
@@ -57,6 +73,7 @@ Run 'newapi-tools doctor --fix' to attempt auto-repair.
 
 - 创建缺失的安装目录
 - 启动未运行的容器（执行 `docker compose up -d`）
+- 修复配置文件权限（0600）
 
 !!! note "提示"
     `--fix` 无法修复 Docker 未安装、配置文件缺失等根本性问题，这些需要手动处理。
