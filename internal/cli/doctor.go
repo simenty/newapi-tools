@@ -51,6 +51,90 @@ type VerboseCheck struct {
 	RawOutput string // Raw command output (if any)
 }
 
+// Check represents a single diagnostic check with its name, runner, fixer, and hint.
+type Check struct {
+	Name    string
+	Run     func(ctx context.Context, cfg *core.Config) checkResult
+	Fix     func(ctx context.Context, cfg *core.Config) error // nil = not auto-fixable
+	FixHint string                                            // Fix is nil: what user should do
+}
+
+// checks defines all diagnostic checks.
+var checks = []Check{
+	{
+		Name:    "docker-binary",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkDockerBinary() },
+		Fix:     nil,
+		FixHint: "请先安装 Docker: https://docs.docker.com/get-docker/",
+	},
+	{
+		Name:    "docker-daemon",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkDockerDaemon() },
+		Fix:     nil,
+		FixHint: "请启动 Docker daemon (例如: sudo systemctl start docker)",
+	},
+	{
+		Name:    "home-dir",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkHomeDir(cfg.NewAPI.Home) },
+		Fix:     fixCreateHomeDir,
+		FixHint: "",
+	},
+	{
+		Name:    "compose-file",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkComposeFile(cfg.NewAPI.Home) },
+		Fix:     nil,
+		FixHint: "运行 'newapi-tools install' 生成 docker-compose.yml",
+	},
+	{
+		Name:    "env-file",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkEnvFile(cfg.NewAPI.Home) },
+		Fix:     nil,
+		FixHint: "运行 'newapi-tools install' 生成 .env 文件",
+	},
+	{
+		Name:    "new-api-container",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkContainer(ctx, "new-api") },
+		Fix:     composeUpFix,
+		FixHint: "",
+	},
+	{
+		Name:    "mysql-container",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkContainer(ctx, "mysql") },
+		Fix:     composeUpFix,
+		FixHint: "",
+	},
+	{
+		Name:    "redis-container",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkContainer(ctx, "redis") },
+		Fix:     composeUpFix,
+		FixHint: "",
+	},
+	{
+		Name:    "http-health",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkHTTPHealth(cfg.NewAPI.Port) },
+		Fix:     nil,
+		FixHint: "检查 new-api 是否在监听端口",
+	},
+	{
+		Name:    "disk-space",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkDiskSpace(cfg.NewAPI.Home) },
+		Fix:     nil,
+		FixHint: "释放磁盘空间或移动数据到更大的卷",
+	},
+	{
+		Name:    "config-permissions",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkConfigPermissions(cfg) },
+		Fix:     fixConfigPermissions,
+		FixHint: "",
+	},
+	{
+		Name:    "docker-group",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkDockerGroupMembership() },
+		Fix:     nil,
+		FixHint: "运行: sudo usermod -aG docker $USER && newgrp docker",
+	},
+}
+
 func runDoctor(cmd *cobra.Command, args []string) error {
 	cfg := core.GetConfig()
 	if cfg == nil {
@@ -65,43 +149,9 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	ctx := cmd.Context()
-	var results []checkResult
 
-	// --- Check 1: Docker binary available ---
-	results = append(results, checkDockerBinary())
-
-	// --- Check 2: Docker daemon accessible ---
-	results = append(results, checkDockerDaemon())
-
-	// --- Check 3: new-api home directory exists ---
-	results = append(results, checkHomeDir(cfg.NewAPI.Home))
-
-	// --- Check 4: docker-compose.yml exists ---
-	results = append(results, checkComposeFile(cfg.NewAPI.Home))
-
-	// --- Check 5: .env file exists ---
-	results = append(results, checkEnvFile(cfg.NewAPI.Home))
-
-	// --- Check 6: new-api container running ---
-	results = append(results, checkContainer(ctx, "new-api"))
-
-	// --- Check 7: mysql container running ---
-	results = append(results, checkContainer(ctx, "mysql"))
-
-	// --- Check 8: redis container running ---
-	results = append(results, checkContainer(ctx, "redis"))
-
-	// --- Check 9: HTTP health check on configured port ---
-	results = append(results, checkHTTPHealth(cfg.NewAPI.Port))
-
-	// --- Check 10: Disk space ---
-	results = append(results, checkDiskSpace(cfg.NewAPI.Home))
-
-	// --- Check 11: Config file permissions ---
-	results = append(results, checkConfigPermissions(cfg))
-
-	// --- Check 12: Docker group membership ---
-	results = append(results, checkDockerGroupMembership())
+	// Run all checks
+	results := runAllChecks(ctx, cfg)
 
 	// ---- Output results ----
 	if jsonOut {
@@ -111,15 +161,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 
 	// Count failures
-	failCount, warnCount := 0, 0
-	for _, r := range results {
-		switch r.Status {
-		case "FAIL":
-			failCount++
-		case "WARN":
-			warnCount++
-		}
-	}
+	failCount, warnCount := countResults(results)
 
 	fmt.Println()
 	fmt.Printf("Checks: %d total, %d warnings, %d failures\n",
@@ -137,19 +179,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			fmt.Println()
 			fmt.Println("Re-checking after fix...")
 			fmt.Println()
-			results = nil
-			results = append(results, checkDockerBinary())
-			results = append(results, checkDockerDaemon())
-			results = append(results, checkHomeDir(cfg.NewAPI.Home))
-			results = append(results, checkComposeFile(cfg.NewAPI.Home))
-			results = append(results, checkEnvFile(cfg.NewAPI.Home))
-			results = append(results, checkContainer(ctx, "new-api"))
-			results = append(results, checkContainer(ctx, "mysql"))
-			results = append(results, checkContainer(ctx, "redis"))
-			results = append(results, checkHTTPHealth(cfg.NewAPI.Port))
-			results = append(results, checkDiskSpace(cfg.NewAPI.Home))
-			results = append(results, checkConfigPermissions(cfg))
-			results = append(results, checkDockerGroupMembership())
+			results = runAllChecks(ctx, cfg)
 
 			if jsonOut {
 				printDoctorJSON(results, verbose)
@@ -158,15 +188,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 			}
 
 			// Recount
-			failCount, warnCount = 0, 0
-			for _, r := range results {
-				switch r.Status {
-				case "FAIL":
-					failCount++
-				case "WARN":
-					warnCount++
-				}
-			}
+			failCount, warnCount = countResults(results)
 			fmt.Println()
 			fmt.Printf("After fix: %d checks, %d warnings, %d failures\n",
 				len(results), warnCount, failCount)
@@ -185,11 +207,32 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func runAllChecks(ctx context.Context, cfg *core.Config) []checkResult {
+	var results []checkResult
+	for _, check := range checks {
+		results = append(results, check.Run(ctx, cfg))
+	}
+	return results
+}
+
+func countResults(results []checkResult) (int, int) {
+	failCount, warnCount := 0, 0
+	for _, r := range results {
+		switch r.Status {
+		case "FAIL":
+			failCount++
+		case "WARN":
+			warnCount++
+		}
+	}
+	return failCount, warnCount
+}
+
 func checkDockerBinary() checkResult {
 	path, err := exec.LookPath("docker")
 	if err != nil {
 		return checkResult{
-			Name:    "docker binary",
+			Name:    "docker-binary",
 			Status:  "FAIL",
 			Message: "docker not found in PATH",
 			Detail: &VerboseCheck{
@@ -200,7 +243,7 @@ func checkDockerBinary() checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "docker binary",
+		Name:    "docker-binary",
 		Status:  "OK",
 		Message: path,
 		Detail: &VerboseCheck{
@@ -215,7 +258,7 @@ func checkDockerDaemon() checkResult {
 	c, err := docker.NewClient()
 	if err != nil {
 		return checkResult{
-			Name:    "docker daemon",
+			Name:    "docker-daemon",
 			Status:  "FAIL",
 			Message: err.Error(),
 			Detail: &VerboseCheck{
@@ -229,7 +272,7 @@ func checkDockerDaemon() checkResult {
 
 	if !c.IsAvailable() {
 		return checkResult{
-			Name:    "docker daemon",
+			Name:    "docker-daemon",
 			Status:  "FAIL",
 			Message: "docker daemon is not running",
 			Detail: &VerboseCheck{
@@ -240,7 +283,7 @@ func checkDockerDaemon() checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "docker daemon",
+		Name:    "docker-daemon",
 		Status:  "OK",
 		Message: "daemon is accessible",
 		Detail: &VerboseCheck{
@@ -253,7 +296,7 @@ func checkDockerDaemon() checkResult {
 func checkHomeDir(home string) checkResult {
 	if home == "" {
 		return checkResult{
-			Name:    "home directory",
+			Name:    "home-dir",
 			Status:  "WARN",
 			Message: "not configured",
 			Detail: &VerboseCheck{
@@ -264,7 +307,7 @@ func checkHomeDir(home string) checkResult {
 	}
 	if _, err := os.Stat(home); os.IsNotExist(err) {
 		return checkResult{
-			Name:    "home directory",
+			Name:    "home-dir",
 			Status:  "FAIL",
 			Message: fmt.Sprintf("%s does not exist", home),
 			Detail: &VerboseCheck{
@@ -275,7 +318,7 @@ func checkHomeDir(home string) checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "home directory",
+		Name:    "home-dir",
 		Status:  "OK",
 		Message: home,
 		Detail: &VerboseCheck{
@@ -290,7 +333,7 @@ func checkComposeFile(home string) checkResult {
 	path := filepath.Join(home, "docker-compose.yml")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return checkResult{
-			Name:    "docker-compose.yml",
+			Name:    "compose-file",
 			Status:  "FAIL",
 			Message: fmt.Sprintf("%s not found — run 'newapi-tools install'", path),
 			Detail: &VerboseCheck{
@@ -301,7 +344,7 @@ func checkComposeFile(home string) checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "docker-compose.yml",
+		Name:    "compose-file",
 		Status:  "OK",
 		Message: path,
 		Detail: &VerboseCheck{
@@ -316,7 +359,7 @@ func checkEnvFile(home string) checkResult {
 	path := filepath.Join(home, ".env")
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return checkResult{
-			Name:    ".env file",
+			Name:    "env-file",
 			Status:  "WARN",
 			Message: fmt.Sprintf("%s not found — credentials may be missing", path),
 			Detail: &VerboseCheck{
@@ -327,7 +370,7 @@ func checkEnvFile(home string) checkResult {
 		}
 	}
 	return checkResult{
-		Name:    ".env file",
+		Name:    "env-file",
 		Status:  "OK",
 		Message: path,
 		Detail: &VerboseCheck{
@@ -339,10 +382,11 @@ func checkEnvFile(home string) checkResult {
 }
 
 func checkContainer(ctx context.Context, name string) checkResult {
+	checkName := name + "-container"
 	c, err := docker.NewClient()
 	if err != nil {
 		return checkResult{
-			Name:    name + " container",
+			Name:    checkName,
 			Status:  "SKIP",
 			Message: "docker unavailable",
 			Detail: &VerboseCheck{
@@ -357,7 +401,7 @@ func checkContainer(ctx context.Context, name string) checkResult {
 	containers, listErr := c.ContainerList(ctx)
 	if listErr != nil {
 		return checkResult{
-			Name:    name + " container",
+			Name:    checkName,
 			Status:  "WARN",
 			Message: fmt.Sprintf("failed to list containers: %v", listErr),
 			Detail: &VerboseCheck{
@@ -372,7 +416,7 @@ func checkContainer(ctx context.Context, name string) checkResult {
 		if strings.Contains(ctr.Name, name) {
 			if ctr.State == "running" {
 				return checkResult{
-					Name:    name + " container",
+					Name:    checkName,
 					Status:  "OK",
 					Message: fmt.Sprintf("%s (%s)", ctr.Image, ctr.Status),
 					Detail: &VerboseCheck{
@@ -382,7 +426,7 @@ func checkContainer(ctx context.Context, name string) checkResult {
 				}
 			}
 			return checkResult{
-				Name:    name + " container",
+				Name:    checkName,
 				Status:  "FAIL",
 				Message: fmt.Sprintf("state=%s, status=%s", ctr.State, ctr.Status),
 				Detail: &VerboseCheck{
@@ -393,7 +437,7 @@ func checkContainer(ctx context.Context, name string) checkResult {
 		}
 	}
 	return checkResult{
-		Name:    name + " container",
+		Name:    checkName,
 		Status:  "FAIL",
 		Message: "container not found",
 		Detail: &VerboseCheck{
@@ -412,7 +456,7 @@ func checkHTTPHealth(port int) checkResult {
 	resp, err := client.Get(url)
 	if err != nil {
 		return checkResult{
-			Name:    "HTTP health",
+			Name:    "http-health",
 			Status:  "WARN",
 			Message: fmt.Sprintf("port %d not reachable: %v", port, err),
 			Detail: &VerboseCheck{
@@ -426,7 +470,7 @@ func checkHTTPHealth(port int) checkResult {
 
 	if resp.StatusCode < 500 {
 		return checkResult{
-			Name:    "HTTP health",
+			Name:    "http-health",
 			Status:  "OK",
 			Message: fmt.Sprintf("port %d responded with HTTP %d", port, resp.StatusCode),
 			Detail: &VerboseCheck{
@@ -438,7 +482,7 @@ func checkHTTPHealth(port int) checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "HTTP health",
+		Name:    "http-health",
 		Status:  "WARN",
 		Message: fmt.Sprintf("port %d returned HTTP %d", port, resp.StatusCode),
 		Detail: &VerboseCheck{
@@ -453,7 +497,7 @@ func checkHTTPHealth(port int) checkResult {
 func checkDiskSpace(home string) checkResult {
 	if home == "" {
 		return checkResult{
-			Name:    "disk space",
+			Name:    "disk-space",
 			Status:  "SKIP",
 			Message: "home not configured",
 			Detail: &VerboseCheck{
@@ -469,7 +513,7 @@ func checkDiskSpace(home string) checkResult {
 		lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 		if len(lines) >= 2 {
 			return checkResult{
-				Name:    "disk space",
+				Name:    "disk-space",
 				Status:  "OK",
 				Message: strings.TrimSpace(lines[1]),
 				Detail: &VerboseCheck{
@@ -488,7 +532,7 @@ func checkDiskSpace(home string) checkResult {
 		for _, l := range lines {
 			if strings.Contains(l, "bytes free") || strings.Contains(l, "字节可用") {
 				return checkResult{
-					Name:    "disk space",
+					Name:    "disk-space",
 					Status:  "OK",
 					Message: strings.TrimSpace(l),
 					Detail: &VerboseCheck{
@@ -502,7 +546,7 @@ func checkDiskSpace(home string) checkResult {
 	}
 
 	return checkResult{
-		Name:    "disk space",
+		Name:    "disk-space",
 		Status:  "SKIP",
 		Message: "disk info unavailable on this platform",
 		Detail: &VerboseCheck{
@@ -527,7 +571,7 @@ func checkConfigPermissions(cfg *core.Config) checkResult {
 
 	if len(configPaths) == 0 {
 		return checkResult{
-			Name:    "config permissions",
+			Name:    "config-permissions",
 			Status:  "SKIP",
 			Message: "no config files to check",
 			Detail: &VerboseCheck{
@@ -546,7 +590,7 @@ func checkConfigPermissions(cfg *core.Config) checkResult {
 
 	if len(issues) > 0 {
 		return checkResult{
-			Name:    "config permissions",
+			Name:    "config-permissions",
 			Status:  "WARN",
 			Message: strings.Join(issues, "; "),
 			Detail: &VerboseCheck{
@@ -557,7 +601,7 @@ func checkConfigPermissions(cfg *core.Config) checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "config permissions",
+		Name:    "config-permissions",
 		Status:  "OK",
 		Message: "all config files have secure permissions",
 		Detail: &VerboseCheck{
@@ -572,7 +616,7 @@ func checkDockerGroupMembership() checkResult {
 	inGroup, err := security.CheckDockerGroup()
 	if err != nil {
 		return checkResult{
-			Name:    "docker group",
+			Name:    "docker-group",
 			Status:  "WARN",
 			Message: fmt.Sprintf("cannot check: %v", err),
 			Detail: &VerboseCheck{
@@ -584,7 +628,7 @@ func checkDockerGroupMembership() checkResult {
 	}
 	if !inGroup {
 		return checkResult{
-			Name:    "docker group",
+			Name:    "docker-group",
 			Status:  "WARN",
 			Message: "current user is not in 'docker' group — may need sudo",
 			Detail: &VerboseCheck{
@@ -595,7 +639,7 @@ func checkDockerGroupMembership() checkResult {
 		}
 	}
 	return checkResult{
-		Name:    "docker group",
+		Name:    "docker-group",
 		Status:  "OK",
 		Message: "current user is in 'docker' group",
 		Detail: &VerboseCheck{
@@ -684,74 +728,87 @@ func detailToJSON(d *VerboseCheck) string {
 
 // ---- Auto-fix logic ----
 
-// runAutoFix attempts to automatically resolve detected issues.
+// runAutoFix attempts to automatically resolve detected issues using Check definitions.
 // Returns the number of fixes applied.
 func runAutoFix(ctx context.Context, results []checkResult, cfg *core.Config) int {
 	fixCount := 0
 	composeStarted := false // guard: run docker compose up only once
-
+	resultByName := make(map[string]checkResult)
 	for _, r := range results {
-		if r.Status != "FAIL" && r.Status != "WARN" {
+		resultByName[r.Name] = r
+	}
+
+	for _, check := range checks {
+		result, ok := resultByName[check.Name]
+		if !ok || (result.Status != "FAIL" && result.Status != "WARN") {
 			continue
 		}
 
-		switch r.Name {
-		case "home directory":
-			if cfg.NewAPI.Home != "" {
-				if err := os.MkdirAll(cfg.NewAPI.Home, 0755); err == nil {
-					fmt.Printf("  [FIXED] Created home directory: %s\n", cfg.NewAPI.Home)
-					fixCount++
-				} else {
-					fmt.Printf("  [SKIP] Cannot create home directory: %v\n", err)
+		if check.Fix != nil {
+			if check.Name == "new-api-container" || check.Name == "mysql-container" || check.Name == "redis-container" {
+				if composeStarted {
+					continue
 				}
-			}
-
-		case "docker-compose.yml":
-			fmt.Printf("  [HINT] Run 'newapi-tools install' to generate docker-compose.yml\n")
-
-		case ".env file":
-			fmt.Printf("  [HINT] Run 'newapi-tools install' to generate .env file\n")
-
-		case "new-api container", "mysql container", "redis container":
-			// Only run docker compose up once even if multiple containers are down
-			if composeStarted {
-				continue
-			}
-			composePath := filepath.Join(cfg.NewAPI.Home, "docker-compose.yml")
-			if _, err := os.Stat(composePath); err == nil {
+				composePath := filepath.Join(cfg.NewAPI.Home, "docker-compose.yml")
+				if _, err := os.Stat(composePath); err != nil {
+					fmt.Printf("  [HINT] 运行 'newapi-tools install' 先安装\n")
+					continue
+				}
 				fmt.Printf("  [FIX] Starting containers with docker compose up -d...\n")
-				if err := composeUpFix(ctx, cfg); err != nil {
+				if err := check.Fix(ctx, cfg); err != nil {
 					fmt.Printf("  [FAIL] Could not start containers: %v\n", err)
 				} else {
 					fmt.Printf("  [FIXED] Containers started\n")
 					fixCount++
+					composeStarted = true
 				}
-				composeStarted = true
 			} else {
-				fmt.Printf("  [HINT] Run 'newapi-tools install' first\n")
+				fmt.Printf("  [FIX] Applying fix for %s...\n", check.Name)
+				if err := check.Fix(ctx, cfg); err == nil {
+					fmt.Printf("  [FIXED] %s\n", check.Name)
+					fixCount++
+				} else {
+					fmt.Printf("  [FAIL] Could not fix %s: %v\n", check.Name, err)
+				}
 			}
-
-		case "docker binary":
-			fmt.Printf("  [HINT] Install Docker: https://docs.docker.com/get-docker/\n")
-
-		case "docker daemon":
-			fmt.Printf("  [HINT] Start the Docker daemon (e.g., 'sudo systemctl start docker')\n")
-
-		case "HTTP health":
-			fmt.Printf("  [HINT] Check that new-api is listening on port %d\n", cfg.NewAPI.Port)
-
-		case "disk space":
-			fmt.Printf("  [HINT] Free up disk space or move data to a larger volume\n")
-
-		case "config permissions":
-			fmt.Printf("  [HINT] Run: chmod 600 <config-file> to restrict permissions\n")
-
-		case "docker group":
-			fmt.Printf("  [HINT] Run: sudo usermod -aG docker $USER && newgrp docker\n")
+		} else if check.FixHint != "" {
+			fmt.Printf("  [HINT] %s\n", check.FixHint)
 		}
 	}
 
 	return fixCount
+}
+
+// fixCreateHomeDir creates the home directory if it doesn't exist.
+func fixCreateHomeDir(ctx context.Context, cfg *core.Config) error {
+	if cfg.NewAPI.Home == "" {
+		return fmt.Errorf("home not configured")
+	}
+	return os.MkdirAll(cfg.NewAPI.Home, 0755)
+}
+
+// fixConfigPermissions fixes config file permissions.
+func fixConfigPermissions(ctx context.Context, cfg *core.Config) error {
+	configPaths := []string{}
+	if cfg.NewAPI.Home != "" {
+		configPaths = append(configPaths,
+			filepath.Join(cfg.NewAPI.Home, ".env"),
+			filepath.Join(cfg.NewAPI.Home, "docker-compose.yml"),
+		)
+	}
+	configFile := core.ConfigFileUsed()
+	if configFile != "" {
+		configPaths = append(configPaths, configFile)
+	}
+
+	for _, path := range configPaths {
+		if err := os.Chmod(path, 0600); err != nil {
+			ui.L().Warn("could not fix permissions", "path", path, "err", err)
+		} else {
+			ui.L().Info("set secure permissions", "path", path)
+		}
+	}
+	return nil
 }
 
 // composeUpFix runs docker compose up -d in the configured home directory.
