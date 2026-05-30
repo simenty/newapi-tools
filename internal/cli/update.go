@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -212,11 +213,35 @@ func performBackup(ctx context.Context, cfg *core.Config) (string, error) {
 	defer os.RemoveAll(stageDir)
 
 	for _, f := range []string{"docker-compose.yml", ".env"} {
-		_ = copyFileIfExists(cfg.NewAPI.Home+"/"+f, stageDir+"/"+f)
+		_ = copyFileIfExists(filepath.Join(cfg.NewAPI.Home, f), filepath.Join(stageDir, f))
+	}
+
+	// Backup data directory
+	dataDir := filepath.Join(cfg.NewAPI.Home, "data")
+	if _, err := os.Stat(dataDir); err == nil {
+		if err := copyDir(dataDir, filepath.Join(stageDir, "data")); err != nil {
+			ui.L().Warn("警告：数据目录备份失败: " + err.Error())
+		}
+	}
+
+	// Backup Redis data
+	redisDataDir := filepath.Join(cfg.NewAPI.Home, "redis-data")
+	if _, err := os.Stat(redisDataDir); err == nil {
+		if err := copyDir(redisDataDir, filepath.Join(stageDir, "redis-data")); err != nil {
+			ui.L().Warn("警告：Redis 数据备份失败: " + err.Error())
+		}
+	}
+
+	// Backup MySQL data
+	mysqlDataDir := filepath.Join(cfg.NewAPI.Home, "mysql-data")
+	if _, err := os.Stat(mysqlDataDir); err == nil {
+		if err := copyDir(mysqlDataDir, filepath.Join(stageDir, "mysql-data")); err != nil {
+			ui.L().Warn("警告：MySQL 数据备份失败: " + err.Error())
+		}
 	}
 
 	timestamp := time.Now().Format("20060102-150405")
-	archivePath := backupDir + "/newapi-backup-" + timestamp + "-preupdate.tar.gz"
+	archivePath := filepath.Join(backupDir, "newapi-backup-"+timestamp+"-preupdate.tar.gz")
 
 	if err := os.MkdirAll(backupDir, 0755); err != nil {
 		return "", err
