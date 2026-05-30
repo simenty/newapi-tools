@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Bonus520/newapi-tools/internal/plugin"
+	"github.com/simenty/newapi-tools/internal/plugin"
 )
 
 // TestNewAPIMetadataParses verifies that the newapi metadata.yml is valid.

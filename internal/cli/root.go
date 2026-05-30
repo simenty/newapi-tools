@@ -8,13 +8,13 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/Bonus520/newapi-tools/internal/audit"
-	"github.com/Bonus520/newapi-tools/internal/core"
-	"github.com/Bonus520/newapi-tools/internal/i18n"
-	"github.com/Bonus520/newapi-tools/internal/plugin"
-	"github.com/Bonus520/newapi-tools/internal/registry"
-	"github.com/Bonus520/newapi-tools/internal/security"
-	"github.com/Bonus520/newapi-tools/internal/ui"
+	"github.com/simenty/newapi-tools/internal/audit"
+	"github.com/simenty/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/i18n"
+	"github.com/simenty/newapi-tools/internal/plugin"
+	"github.com/simenty/newapi-tools/internal/registry"
+	"github.com/simenty/newapi-tools/internal/security"
+	"github.com/simenty/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
 

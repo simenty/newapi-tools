@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/Bonus520/newapi-tools/internal/apperr"
+	"github.com/simenty/newapi-tools/internal/apperr"
 )
 
 // Store manages instance metadata with file-based persistence.

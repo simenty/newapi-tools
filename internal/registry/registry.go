@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Bonus520/newapi-tools/internal/plugin"
+	"github.com/simenty/newapi-tools/internal/plugin"
 )
 
 // Registry manages plugin registration and command routing.

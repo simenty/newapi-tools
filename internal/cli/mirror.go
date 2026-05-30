@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Bonus520/newapi-tools/internal/apperr"
-	"github.com/Bonus520/newapi-tools/internal/docker"
-	"github.com/Bonus520/newapi-tools/internal/ui"
+	"github.com/simenty/newapi-tools/internal/apperr"
+	"github.com/simenty/newapi-tools/internal/docker"
+	"github.com/simenty/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
 

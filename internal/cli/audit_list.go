@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Bonus520/newapi-tools/internal/audit"
-	"github.com/Bonus520/newapi-tools/internal/ui"
+	"github.com/simenty/newapi-tools/internal/audit"
+	"github.com/simenty/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
 

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Bonus520/newapi-tools/internal/apperr"
+	"github.com/simenty/newapi-tools/internal/apperr"
 )
 
 // helper: create a temp file path for the store

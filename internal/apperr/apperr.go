@@ -4,7 +4,7 @@ package apperr
 import (
 	"fmt"
 
-	"github.com/Bonus520/newapi-tools/internal/i18n"
+	"github.com/simenty/newapi-tools/internal/i18n"
 )
 
 // Error code constants for categorizing application errors.

@@ -1,4 +1,4 @@
-module github.com/Bonus520/newapi-tools
+module github.com/simenty/newapi-tools
 
 go 1.22
 

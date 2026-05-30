@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Bonus520/newapi-tools/internal/apperr"
+	"github.com/simenty/newapi-tools/internal/apperr"
 )
 
 // ANSI color codes for terminal output.

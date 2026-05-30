@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Bonus520/newapi-tools/internal/core"
-	"github.com/Bonus520/newapi-tools/internal/i18n"
+	"github.com/simenty/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/i18n"
 )
 
 // SetupLogger initializes the global slog logger based on the provided config.

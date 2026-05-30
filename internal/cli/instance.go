@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/Bonus520/newapi-tools/internal/apperr"
-	"github.com/Bonus520/newapi-tools/internal/core"
-	"github.com/Bonus520/newapi-tools/internal/instance"
-	"github.com/Bonus520/newapi-tools/internal/ui"
+	"github.com/simenty/newapi-tools/internal/apperr"
+	"github.com/simenty/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/instance"
+	"github.com/simenty/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
 

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Bonus520/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/core"
 	"github.com/spf13/cobra"
 )
 
@@ -300,7 +300,7 @@ func TestFindLatestBackup(t *testing.T) {
 		"newapi-backup-20260101-120000.tar.gz",
 		"newapi-backup-20260102-090000.tar.gz",
 		"newapi-backup-20260102-150000.tar.gz", // <- should be latest
-		"other-file.txt",                        // not a backup
+		"other-file.txt",                       // not a backup
 	}
 	for _, f := range files {
 		_ = os.WriteFile(filepath.Join(dir, f), []byte("x"), 0644)

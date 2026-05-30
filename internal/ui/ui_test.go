@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Bonus520/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/core"
 )
 
 func TestSetupLoggerTextFormat(t *testing.T) {

@@ -4,7 +4,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/Bonus520/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/core"
 	"github.com/spf13/cobra"
 )
 

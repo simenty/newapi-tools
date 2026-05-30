@@ -9,7 +9,7 @@ package newapi
 import (
 	"fmt"
 
-	"github.com/Bonus520/newapi-tools/internal/plugin"
+	"github.com/simenty/newapi-tools/internal/plugin"
 )
 
 // NewAPIPlugin implements plugin.Plugin for the built-in newapi commands.

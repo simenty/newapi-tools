@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Bonus520/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/core"
 )
 
 const daemonJSONPath = "/etc/docker/daemon.json"
@@ -24,11 +24,11 @@ func DaemonJSONPath() string { return daemonJSONPath }
 // BuiltinMirrors is the list of well-known registry mirrors for Chinese users.
 // Keys are short names, values are the mirror URLs.
 var BuiltinMirrors = map[string]string{
-	"tuna":    "https://docker.mirrors.tuna.tsinghua.edu.cn",
-	"aliyun":  "https://registry.cn-hangzhou.aliyuncs.com",
-	"ustc":    "https://docker.mirrors.ustc.edu.cn",
-	"163":     "https://hub-mirror.c.163.com",
-	"azure":   "https://dockerhub.azk8s.cn",
+	"tuna":     "https://docker.mirrors.tuna.tsinghua.edu.cn",
+	"aliyun":   "https://registry.cn-hangzhou.aliyuncs.com",
+	"ustc":     "https://docker.mirrors.ustc.edu.cn",
+	"163":      "https://hub-mirror.c.163.com",
+	"azure":    "https://dockerhub.azk8s.cn",
 	"daocloud": "https://f1361db2.m.daocloud.io",
 }
 
