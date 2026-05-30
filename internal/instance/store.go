@@ -186,6 +186,75 @@ func (s *Store) GetActive() (*Instance, error) {
 	return nil, nil // no active instance
 }
 
+// Update updates an existing instance by name.
+func (s *Store) Update(name string, updateFn func(*Instance)) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	instances, err := s.LoadWithoutLock() // we already hold the lock
+	if err != nil {
+		return err
+	}
+
+	found := false
+	for i := range instances {
+		if instances[i].Name == name {
+			updateFn(&instances[i])
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return apperr.New(apperr.CodeInstanceNotFound, fmt.Sprintf("实例 '%s' 不存在", name), "", nil)
+	}
+
+	return s.SaveWithoutLock(instances) // we still hold the lock
+}
+
+// LoadWithoutLock loads instances without acquiring the lock (for internal use).
+func (s *Store) LoadWithoutLock() ([]Instance, error) {
+	data, err := os.ReadFile(s.path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []Instance{}, nil
+		}
+		return nil, apperr.Wrap(apperr.CodeConfigLoad, "", err)
+	}
+
+	var instances []Instance
+	if err := json.Unmarshal(data, &instances); err != nil {
+		return nil, apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("invalid instances.json: %w", err))
+	}
+	return instances, nil
+}
+
+// SaveWithoutLock saves instances without acquiring the lock (for internal use).
+func (s *Store) SaveWithoutLock(instances []Instance) error {
+	data, err := json.MarshalIndent(instances, "", "  ")
+	if err != nil {
+		return apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("marshal instances: %w", err))
+	}
+
+	// Ensure parent directory exists
+	if err := os.MkdirAll(filepath.Dir(s.path), 0755); err != nil {
+		return apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("create instances dir: %w", err))
+	}
+
+	// Atomic write: temp file then rename
+	tmpPath := s.path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
+		return apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("write instances tmp: %w", err))
+	}
+
+	if err := os.Rename(tmpPath, s.path); err != nil {
+		os.Remove(tmpPath) // cleanup temp file
+		return apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("rename instances file: %w", err))
+	}
+
+	return nil
+}
+
 // List returns all instances.
 func (s *Store) List() ([]Instance, error) {
 	return s.Load()

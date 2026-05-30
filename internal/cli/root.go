@@ -11,6 +11,7 @@ import (
 	"github.com/simenty/newapi-tools/internal/audit"
 	"github.com/simenty/newapi-tools/internal/core"
 	"github.com/simenty/newapi-tools/internal/i18n"
+	"github.com/simenty/newapi-tools/internal/instance"
 	"github.com/simenty/newapi-tools/internal/plugin"
 	"github.com/simenty/newapi-tools/internal/registry"
 	"github.com/simenty/newapi-tools/internal/security"
@@ -119,10 +120,28 @@ func initConfig() {
 	}
 
 	configFile, _ := rootCmd.PersistentFlags().GetString("config")
-	_, err := core.LoadConfig(configFile)
+	cfg, err := core.LoadConfig(configFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load config: %v\n", err)
 		return
+	}
+
+	// Load active instance configuration
+	if cfg.Instance.Active != "" {
+		store := instance.NewStore("")
+		activeInstance, err := store.Get(cfg.Instance.Active)
+		if err == nil && activeInstance != nil {
+			syncInstanceToConfig(activeInstance, cfg)
+		}
+	}
+
+	// Apply --instance flag override
+	instanceName, _ := rootCmd.PersistentFlags().GetString("instance")
+	if instanceName != "" {
+		store := instance.NewStore("")
+		if inst, err := store.Get(instanceName); err == nil && inst != nil {
+			syncInstanceToConfig(inst, cfg)
+		}
 	}
 
 	// Apply --debug/--verbose flag overrides for log level
@@ -144,6 +163,16 @@ func initConfig() {
 
 	// Initialize structured logger
 	ui.SetupLogger(&core.GetConfig().Log)
+}
+
+// syncInstanceToConfig synchronizes instance configuration to core.Config.
+func syncInstanceToConfig(inst *instance.Instance, cfg *core.Config) {
+	cfg.NewAPI.Home = inst.Home
+	cfg.NewAPI.Port = inst.Port
+	cfg.NewAPI.DockerImage = inst.DockerImage
+	cfg.NewAPI.Domain = inst.Domain
+	cfg.NewAPI.HealthTimeout = inst.HealthTimeout
+	cfg.NewAPI.MaxBackups = inst.MaxBackups
 }
 
 // initPlugins discovers and loads plugins, then registers their commands

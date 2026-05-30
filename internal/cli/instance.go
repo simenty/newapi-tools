@@ -53,6 +53,9 @@ func init() {
 	instanceAddCmd.Flags().String("home", "", "home directory for the instance (default: /opt/newapi-NAME)")
 	instanceAddCmd.Flags().Int("port", 3000, "port for the instance")
 	instanceAddCmd.Flags().String("image", "calciumion/new-api:latest", "Docker image to use")
+	instanceAddCmd.Flags().String("domain", "", "domain for the instance")
+	instanceAddCmd.Flags().Int("health-timeout", 120, "health check timeout in seconds")
+	instanceAddCmd.Flags().Int("max-backups", 10, "maximum number of backups to keep")
 
 	instanceCmd.AddCommand(instanceAddCmd)
 	instanceCmd.AddCommand(instanceListCmd)
@@ -67,6 +70,9 @@ func runInstanceAdd(cmd *cobra.Command, args []string) error {
 	home, _ := cmd.Flags().GetString("home")
 	port, _ := cmd.Flags().GetInt("port")
 	image, _ := cmd.Flags().GetString("image")
+	domain, _ := cmd.Flags().GetString("domain")
+	healthTimeout, _ := cmd.Flags().GetInt("health-timeout")
+	maxBackups, _ := cmd.Flags().GetInt("max-backups")
 
 	// Validate name
 	if !isValidInstanceName(name) {
@@ -82,16 +88,22 @@ func runInstanceAdd(cmd *cobra.Command, args []string) error {
 
 	// Create new instance
 	inst := instance.NewInstance(name, home, port, image)
+	inst.Domain = domain
+	inst.HealthTimeout = healthTimeout
+	inst.MaxBackups = maxBackups
 
 	if err := store.Add(*inst); err != nil {
 		return err
 	}
 
 	fmt.Printf("Instance '%s' added successfully!\n", name)
-	fmt.Printf("  Home:     %s\n", home)
-	fmt.Printf("  Port:     %d\n", port)
-	fmt.Printf("  Image:    %s\n", image)
-	fmt.Printf("  Compose:  newapi-%s\n", name)
+	fmt.Printf("  Home:            %s\n", home)
+	fmt.Printf("  Port:            %d\n", port)
+	fmt.Printf("  Image:           %s\n", image)
+	fmt.Printf("  Domain:          %s\n", func() string { if domain == "" { return "(none)" }; return domain }())
+	fmt.Printf("  Health Timeout:  %d seconds\n", healthTimeout)
+	fmt.Printf("  Max Backups:     %d\n", maxBackups)
+	fmt.Printf("  Compose:         newapi-%s\n", name)
 	fmt.Println()
 	fmt.Printf("Run 'newapi-tools instance switch %s' to activate it\n", name)
 
@@ -140,12 +152,20 @@ func runInstanceSwitch(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Get the instance we just switched to
+	inst, err := store.Get(name)
+	if err != nil {
+		return err
+	}
+
 	// Update the config
 	cfg := core.GetConfig()
 	if cfg == nil {
 		cfg = core.DefaultConfig()
 	}
 	cfg.Instance.Active = name
+	// Sync instance config to core config
+	syncInstanceToConfig(inst, cfg)
 
 	configPath := core.ConfigFileUsed()
 	if configPath == "" {

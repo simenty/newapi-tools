@@ -11,6 +11,7 @@ import (
 
 	"github.com/simenty/newapi-tools/internal/apperr"
 	"github.com/simenty/newapi-tools/internal/core"
+	"github.com/simenty/newapi-tools/internal/instance"
 	"github.com/simenty/newapi-tools/internal/security"
 	"github.com/simenty/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
@@ -33,6 +34,9 @@ Valid keys:
   newapi.port          Host port for new-api
   newapi.docker_image  Docker image to use
   newapi.backup_dir    Backup storage directory
+  newapi.domain        Domain name for new-api
+  newapi.health_timeout Health check timeout in seconds
+  newapi.max_backups   Maximum number of backups to keep
   docker.compose_cmd   Docker compose command
   log.level             Log level (debug|info|warn|error)
   log.format            Log format (text|json)
@@ -85,14 +89,25 @@ func runConfigShow(cmd *cobra.Command, args []string) error {
 func printConfigTable(cfg *core.Config) {
 	fmt.Println("Current Configuration:")
 	fmt.Println(strings.Repeat("-", 50))
+	if cfg.Instance.Active != "" {
+		fmt.Printf("  %-20s %s\n", "Current Active Instance:", cfg.Instance.Active)
+		fmt.Println(strings.Repeat("-", 50))
+	}
 	fmt.Printf("  %-20s %s\n", "newapi.home", cfg.NewAPI.Home)
 	fmt.Printf("  %-20s %d\n", "newapi.port", cfg.NewAPI.Port)
 	fmt.Printf("  %-20s %s\n", "newapi.docker_image", cfg.NewAPI.DockerImage)
+	fmt.Printf("  %-20s %s\n", "newapi.domain", func() string {
+		if cfg.NewAPI.Domain == "" {
+			return "(none)"
+		}
+		return cfg.NewAPI.Domain
+	}())
+	fmt.Printf("  %-20s %d\n", "newapi.health_timeout", cfg.NewAPI.HealthTimeout)
+	fmt.Printf("  %-20s %d\n", "newapi.max_backups", cfg.NewAPI.MaxBackups)
 	fmt.Printf("  %-20s %s\n", "newapi.backup_dir", cfg.NewAPI.BackupDir)
 	fmt.Printf("  %-20s %s\n", "docker.compose_cmd", cfg.Docker.ComposeCmd)
 	fmt.Printf("  %-20s %s\n", "log.level", cfg.Log.Level)
 	fmt.Printf("  %-20s %s\n", "log.format", cfg.Log.Format)
-	fmt.Printf("  %-20s %s\n", "instance.active", cfg.Instance.Active)
 	fmt.Println(strings.Repeat("-", 50))
 
 	configFile := core.ConfigFileUsed()
@@ -109,7 +124,10 @@ func printConfigJSON(cfg *core.Config) error {
     "home": %q,
     "port": %d,
     "docker_image": %q,
-    "backup_dir": %q
+    "backup_dir": %q,
+    "domain": %q,
+    "health_timeout": %d,
+    "max_backups": %d
   },
   "docker": {
     "compose_cmd": %q
@@ -127,6 +145,9 @@ func printConfigJSON(cfg *core.Config) error {
 		cfg.NewAPI.Port,
 		cfg.NewAPI.DockerImage,
 		cfg.NewAPI.BackupDir,
+		cfg.NewAPI.Domain,
+		cfg.NewAPI.HealthTimeout,
+		cfg.NewAPI.MaxBackups,
 		cfg.Docker.ComposeCmd,
 		cfg.Log.Level,
 		cfg.Log.Format,
@@ -139,14 +160,17 @@ func printConfigJSON(cfg *core.Config) error {
 
 // validKeys lists all settable config keys and their type (string/int).
 var validKeys = map[string]string{
-	"newapi.home":         "string",
-	"newapi.port":         "int",
-	"newapi.docker_image": "string",
-	"newapi.backup_dir":   "string",
-	"docker.compose_cmd":  "string",
-	"log.level":           "string",
-	"log.format":          "string",
-	"instance.active":     "string",
+	"newapi.home":           "string",
+	"newapi.port":           "int",
+	"newapi.docker_image":   "string",
+	"newapi.backup_dir":     "string",
+	"newapi.domain":         "string",
+	"newapi.health_timeout": "int",
+	"newapi.max_backups":    "int",
+	"docker.compose_cmd":    "string",
+	"log.level":             "string",
+	"log.format":            "string",
+	"instance.active":       "string",
 }
 
 func runConfigSet(cmd *cobra.Command, args []string) error {
@@ -170,6 +194,36 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 	// Apply the value
 	if err := applyConfigValue(cfg, key, value, keyType); err != nil {
 		return err
+	}
+
+	// If we have an active instance, also update it in the store
+	if cfg.Instance.Active != "" {
+		store := instance.NewStore("")
+		err := store.Update(cfg.Instance.Active, func(inst *instance.Instance) {
+			switch key {
+			case "newapi.home":
+				inst.Home = value
+			case "newapi.port":
+				if p, err := strconv.Atoi(value); err == nil {
+					inst.Port = p
+				}
+			case "newapi.docker_image":
+				inst.DockerImage = value
+			case "newapi.domain":
+				inst.Domain = value
+			case "newapi.health_timeout":
+				if t, err := strconv.Atoi(value); err == nil {
+					inst.HealthTimeout = t
+				}
+			case "newapi.max_backups":
+				if m, err := strconv.Atoi(value); err == nil {
+					inst.MaxBackups = m
+				}
+			}
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Could not update active instance configuration: %v\n", err)
+		}
 	}
 
 	// Determine config file path
@@ -204,6 +258,20 @@ func applyConfigValue(cfg *core.Config, key, value, keyType string) error {
 		cfg.NewAPI.DockerImage = value
 	case "newapi.backup_dir":
 		cfg.NewAPI.BackupDir = value
+	case "newapi.domain":
+		cfg.NewAPI.Domain = value
+	case "newapi.health_timeout":
+		timeout, err := strconv.Atoi(value)
+		if err != nil || timeout < 1 {
+			return fmt.Errorf("invalid health timeout: %s (must be positive integer)", value)
+		}
+		cfg.NewAPI.HealthTimeout = timeout
+	case "newapi.max_backups":
+		maxBackups, err := strconv.Atoi(value)
+		if err != nil || maxBackups < 1 {
+			return fmt.Errorf("invalid max backups: %s (must be positive integer)", value)
+		}
+		cfg.NewAPI.MaxBackups = maxBackups
 	case "docker.compose_cmd":
 		cfg.Docker.ComposeCmd = value
 	case "log.level":
@@ -254,6 +322,34 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	// newapi.docker_image
 	cfg.NewAPI.DockerImage = prompt(reader, "Docker image", cfg.NewAPI.DockerImage)
 
+	// newapi.domain
+	domainDefault := cfg.NewAPI.Domain
+	if domainDefault == "" {
+		domainDefault = "(none)"
+	}
+	domainInput := prompt(reader, "Domain name (leave empty for none)", domainDefault)
+	if domainInput != "(none)" && domainInput != "" {
+		cfg.NewAPI.Domain = domainInput
+	} else {
+		cfg.NewAPI.Domain = ""
+	}
+
+	// newapi.health_timeout
+	timeoutStr := prompt(reader, "Health check timeout in seconds", fmt.Sprintf("%d", cfg.NewAPI.HealthTimeout))
+	if t, err := strconv.Atoi(timeoutStr); err == nil && t > 0 {
+		cfg.NewAPI.HealthTimeout = t
+	} else {
+		fmt.Fprintf(os.Stderr, "Invalid timeout, keeping default: %d\n", cfg.NewAPI.HealthTimeout)
+	}
+
+	// newapi.max_backups
+	maxBackupsStr := prompt(reader, "Maximum number of backups to keep", fmt.Sprintf("%d", cfg.NewAPI.MaxBackups))
+	if m, err := strconv.Atoi(maxBackupsStr); err == nil && m > 0 {
+		cfg.NewAPI.MaxBackups = m
+	} else {
+		fmt.Fprintf(os.Stderr, "Invalid number, keeping default: %d\n", cfg.NewAPI.MaxBackups)
+	}
+
 	// newapi.backup_dir
 	cfg.NewAPI.BackupDir = prompt(reader, "Backup directory", cfg.NewAPI.BackupDir)
 
@@ -286,6 +382,19 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 
 	if err := core.WriteConfig(cfg, configFile); err != nil {
 		return fmt.Errorf("failed to save config: %w", err)
+	}
+
+	// If we have an active instance, also update it in the store
+	if cfg.Instance.Active != "" {
+		store := instance.NewStore("")
+		store.Update(cfg.Instance.Active, func(inst *instance.Instance) {
+			inst.Home = cfg.NewAPI.Home
+			inst.Port = cfg.NewAPI.Port
+			inst.DockerImage = cfg.NewAPI.DockerImage
+			inst.Domain = cfg.NewAPI.Domain
+			inst.HealthTimeout = cfg.NewAPI.HealthTimeout
+			inst.MaxBackups = cfg.NewAPI.MaxBackups
+		})
 	}
 
 	fmt.Printf("Configuration saved to %s\n", configFile)
