@@ -126,11 +126,16 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Printf("Target image:  %s\n", cfg.NewAPI.DockerImage)
 
 	// --- Pre-step: Backup (unless --force or --backup=false) ---
+	var backupPath string
 	if doBackup && !force {
-		if err := performBackup(cmd.Context(), cfg); err != nil {
+		var err error
+		backupPath, err = performBackup(cmd.Context(), cfg)
+		if err != nil {
 			ui.L().Warn("pre-update backup failed", "error", err)
 			fmt.Printf("  Warning: backup failed: %v\n", err)
 			fmt.Println("  Continuing with update (use --force to skip backup entirely)...")
+		} else {
+			fmt.Printf("  Backup created: %s\n", backupPath)
 		}
 	}
 
@@ -149,8 +154,24 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	// --- Step [2/3]: Recreate container ---
 	ui.PrintStep(2, 3, i18n.T("update.step_recreate"))
-	if err := composeUpForceRecreate(cmd.Context(), cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
-		return apperr.Wrap(apperr.CodeMirrorApply, "", err)
+	err = composeUpForceRecreate(cmd.Context(), cfg.NewAPI.Home, cfg.Docker.ComposeCmd)
+	if err != nil {
+		// 新增：自动回滚
+		if backupPath != "" {
+			ui.L().Warn("更新失败，正在自动回滚...")
+			fmt.Println("\n  Update failed! Starting automatic rollback...")
+			if rollbackErr := performRestore(cmd.Context(), cfg, backupPath); rollbackErr != nil {
+				return apperr.Wrap(apperr.CodeUpdateSelfFail, "更新失败且回滚失败", rollbackErr)
+			}
+			fmt.Println("  ✓ 已自动回滚到更新前状态")
+			ui.L().Info("✓ 已自动回滚到更新前状态")
+		}
+		return apperr.Wrap(apperr.CodeUpdateSelfFail, "更新失败"+func() string {
+			if backupPath != "" {
+				return "，已自动回滚"
+			}
+			return ""
+		}(), err)
 	}
 	fmt.Println("  Containers recreated.")
 
@@ -177,7 +198,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 }
 
 // performBackup creates a backup before update using the same logic as runBackup.
-func performBackup(ctx context.Context, cfg *core.Config) error {
+func performBackup(ctx context.Context, cfg *core.Config) (string, error) {
 	// Reuse the same backup directory logic
 	backupDir := cfg.NewAPI.BackupDir
 	if backupDir == "" {
@@ -186,7 +207,7 @@ func performBackup(ctx context.Context, cfg *core.Config) error {
 
 	stageDir, err := os.MkdirTemp("", "newapi-update-backup-*")
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer os.RemoveAll(stageDir)
 
@@ -198,10 +219,39 @@ func performBackup(ctx context.Context, cfg *core.Config) error {
 	archivePath := backupDir + "/newapi-backup-" + timestamp + "-preupdate.tar.gz"
 
 	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		return "", err
+	}
+
+	if err := createTarArchive(archivePath, stageDir, true); err != nil {
+		return "", err
+	}
+
+	return archivePath, nil
+}
+
+// performRestore restores a backup archive to the new-api home directory and restarts services
+func performRestore(ctx context.Context, cfg *core.Config, backupPath string) error {
+	ui.L().Info("restoring backup", "file", backupPath)
+
+	// Step 1: Stop running containers
+	ui.PrintStep(1, 2, "Stopping containers...")
+	if err := docker.ComposeDown(ctx, cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
+		ui.L().Warn("compose down failed during restore", "error", err)
+	}
+
+	// Step 2: Extract backup archive
+	ui.PrintStep(2, 2, "Extracting backup...")
+	if err := extractTarArchive(backupPath, cfg.NewAPI.Home); err != nil {
 		return err
 	}
 
-	return createTarArchive(archivePath, stageDir, true)
+	// Step 3: Restart containers
+	ui.PrintStep(3, 2, "Restarting containers...")
+	if err := docker.ComposeUp(ctx, cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // composeUpForceRecreate runs "docker compose up -d --force-recreate".
@@ -271,7 +321,7 @@ func applyTempMirror(nameOrURL string) error {
 // runCheckUpdate checks GitHub for the latest version of newapi-tools
 func runCheckUpdate(ctx context.Context) error {
 	fmt.Println("Checking for updates...")
-	release, err := selfupdate.CheckLatest(ctx, "Bonus520/newapi-tools")
+	release, err := selfupdate.CheckLatest(ctx, "simenty/newapi-tools")
 	if err != nil {
 		return apperr.Wrap(apperr.CodeUpdateCheckFail, "", err)
 	}
@@ -312,7 +362,7 @@ func runSelfUpdate(ctx context.Context) error {
 	cfg := core.GetConfig()
 	if cfg != nil {
 		fmt.Println("Creating backup of new-api first...")
-		if err := performBackup(ctx, cfg); err != nil {
+		if _, err := performBackup(ctx, cfg); err != nil {
 			ui.L().Warn("pre-update backup failed", "error", err)
 			fmt.Printf("  Warning: backup failed: %v\n", err)
 		}
@@ -321,7 +371,7 @@ func runSelfUpdate(ctx context.Context) error {
 	// Run self-update
 	opts := selfupdate.SelfUpdateOptions{
 		CurrentBinary: currentBinary,
-		Repo:          "Bonus520/newapi-tools",
+		Repo:          "simenty/newapi-tools",
 		OnProgress: func(stage string, pct float64) {
 			// stage is not used for now
 			if pct > 0 {
