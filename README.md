@@ -1,4 +1,4 @@
-# NewAPI Tools V3.0
+# NewAPI Tools V3.2
 
 Docker management platform for [new-api](https://github.com/Calcium-Ion/new-api), rewritten in Go.
 
