@@ -20,6 +20,7 @@ import (
 	"github.com/simenty/newapi-tools/internal/instance"
 	"github.com/simenty/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 var installCmd = &cobra.Command{
@@ -395,13 +396,33 @@ func waitForHealth(port int) {
 	fmt.Println("⚠️  服务健康检查超时（60秒），请手动检查容器状态: docker ps")
 }
 
-// generateComposeYAML generates the docker-compose.yml content.
-// It supports multi-arch (arm64) and different database types based on opts.
+type composeService struct {
+	Image         string            `yaml:"image"`
+	ContainerName string            `yaml:"container_name"`
+	Restart       string            `yaml:"restart"`
+	Ports         []string          `yaml:"ports,omitempty"`
+	EnvFile       []string          `yaml:"env_file,omitempty"`
+	Volumes       []string          `yaml:"volumes,omitempty"`
+	DependsOn     []string          `yaml:"depends_on,omitempty"`
+	Environment   map[string]string `yaml:"environment,omitempty"`
+	Platform      string            `yaml:"platform,omitempty"`
+}
+
+type composeFile struct {
+	Name     string                    `yaml:"name,omitempty"`
+	Version  string                    `yaml:"version"`
+	Services map[string]composeService `yaml:"services"`
+}
+
+// generateComposeYAML generates the docker-compose.yml content using structs.
 func generateComposeYAML(cfg *core.Config, opts installOptions, composeProjectName string) string {
-	// Determine platform directive for arm64
-	platformLine := ""
-	if runtime.GOARCH == "arm64" {
-		platformLine = "    platform: linux/arm64\n"
+	cf := composeFile{
+		Version:  "3.8",
+		Services: make(map[string]composeService),
+	}
+
+	if composeProjectName != "" {
+		cf.Name = composeProjectName
 	}
 
 	// Build new-api service
@@ -409,69 +430,56 @@ func generateComposeYAML(cfg *core.Config, opts installOptions, composeProjectNa
 	if composeProjectName != "" {
 		newAPIContainerName = fmt.Sprintf("%s-new-api", composeProjectName)
 	}
-	newAPIService := fmt.Sprintf(`  new-api:
-    image: %s
-    container_name: %s
-    restart: always
-%s    ports:
-      - "%d:3000"
-    env_file: .env
-    volumes:
-      - ./data:/data`, cfg.NewAPI.DockerImage, newAPIContainerName, platformLine, cfg.NewAPI.Port)
+	newAPISvc := composeService{
+		Image:         cfg.NewAPI.DockerImage,
+		ContainerName: newAPIContainerName,
+		Restart:       "always",
+		Ports:         []string{fmt.Sprintf("%d:3000", cfg.NewAPI.Port)},
+		EnvFile:       []string{".env"},
+		Volumes:       []string{"./data:/data"},
+		DependsOn:     []string{"redis"},
+	}
+	if runtime.GOARCH == "arm64" {
+		newAPISvc.Platform = "linux/arm64"
+	}
+	if opts.DBType == "mysql" {
+		newAPISvc.DependsOn = append(newAPISvc.DependsOn, "mysql")
+	}
+	cf.Services["new-api"] = newAPISvc
 
-	// Build dependent services based on DB type
-	var services []string
-	services = append(services, newAPIService)
-
+	// Build MySQL service if needed
 	if opts.DBType == "mysql" {
 		mysqlContainerName := "mysql"
 		if composeProjectName != "" {
 			mysqlContainerName = fmt.Sprintf("%s-mysql", composeProjectName)
 		}
-		services = append(services, fmt.Sprintf(`  mysql:
-    image: mysql:8.0
-    container_name: %s
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: newapi
-    volumes:
-      - ./mysql-data:/var/lib/mysql`, mysqlContainerName))
+		cf.Services["mysql"] = composeService{
+			Image:         "mysql:8.0",
+			ContainerName: mysqlContainerName,
+			Restart:       "always",
+			Environment: map[string]string{
+				"MYSQL_ROOT_PASSWORD": "${MYSQL_ROOT_PASSWORD}",
+				"MYSQL_DATABASE":      "newapi",
+			},
+			Volumes: []string{"./mysql-data:/var/lib/mysql"},
+		}
 	}
 
-	// Always include Redis (new-api requires it)
+	// Build Redis service (always included)
 	redisContainerName := "redis"
 	if composeProjectName != "" {
 		redisContainerName = fmt.Sprintf("%s-redis", composeProjectName)
 	}
-	services = append(services, fmt.Sprintf(`  redis:
-    image: redis:7
-    container_name: %s
-    restart: always
-    volumes:
-      - ./redis-data:/data`, redisContainerName))
-
-	// Build depends_on list
-	dependsOn := []string{}
-	if opts.DBType == "mysql" {
-		dependsOn = append(dependsOn, "      - mysql")
+	cf.Services["redis"] = composeService{
+		Image:         "redis:7",
+		ContainerName: redisContainerName,
+		Restart:       "always",
+		Volumes:       []string{"./redis-data:/data"},
 	}
-	dependsOn = append(dependsOn, "      - redis")
 
-	// Assemble the final YAML
-	var topLevel string
-	if composeProjectName != "" {
-		topLevel = fmt.Sprintf(`name: %s
-`, composeProjectName)
-	}
-	yaml := fmt.Sprintf(`version: '3.8'
-%sservices:
-%s
-    depends_on:
-%s
-`, topLevel, strings.Join(services, "\n"), strings.Join(dependsOn, "\n"))
-
-	return yaml
+	// Marshal to YAML
+	out, _ := yaml.Marshal(cf)
+	return string(out)
 }
 
 // generateEnvFile generates the .env file content with random passwords.
