@@ -30,6 +30,8 @@ func init() {
 	updateCmd.Flags().Bool("force", false, "force update without backup")
 	updateCmd.Flags().String("mirror", "", "registry mirror to use for this pull (e.g. tuna, aliyun, or a full URL)")
 	updateCmd.Flags().Bool("no-auto-mirror", false, "skip auto-detecting and applying the fastest registry mirror")
+	updateCmd.Flags().Bool("check", false, "check for latest version without updating")
+	updateCmd.Flags().Bool("self", false, "update newapi-tools itself to latest version")
 
 	rootCmd.AddCommand(updateCmd)
 }
@@ -45,6 +47,18 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	force, _ := cmd.Flags().GetBool("force")
 	mirrorFlag, _ := cmd.Flags().GetString("mirror")
 	noAutoMirror, _ := cmd.Flags().GetBool("no-auto-mirror")
+	checkOnly, _ := cmd.Flags().GetBool("check")
+	selfUpdate, _ := cmd.Flags().GetBool("self")
+
+	// Handle --self: update newapi-tools itself
+	if selfUpdate {
+		return runSelfUpdate(cmd.Context())
+	}
+
+	// Handle --check: just check for latest version
+	if checkOnly {
+		return runCheckUpdate(cmd.Context())
+	}
 
 	// Override image if specified
 	if imageTag != "" {
@@ -250,5 +264,83 @@ func applyTempMirror(nameOrURL string) error {
 		return apperr.Wrap(apperr.CodeDockerDaemonDown, "", err)
 	}
 	fmt.Println("  Mirror applied.")
+	return nil
+}
+
+// runCheckUpdate checks GitHub for the latest version of newapi-tools
+func runCheckUpdate(ctx context.Context) error {
+	fmt.Println("Checking for updates...")
+	release, err := selfupdate.CheckLatest(ctx, "Bonus520/newapi-tools")
+	if err != nil {
+		return apperr.Wrap(apperr.CodeUpdateCheckFail, "", err)
+	}
+
+	current := core.Version
+	latest := release.TagName
+
+	fmt.Printf("Current version: %s\n", current)
+	fmt.Printf("Latest version:  %s (published %s)\n", latest, release.PublishedAt.Format("2006-01-02"))
+	fmt.Printf("Release notes:   %s\n", release.HTMLURL)
+
+	hasUpdate, _ := selfupdate.CompareVersions(current, latest)
+	if hasUpdate {
+		fmt.Println()
+		fmt.Println("An update is available!")
+		fmt.Printf("Run 'newapi-tools update --self' to update to %s\n", latest)
+	} else {
+		fmt.Println()
+		fmt.Println("You're already using the latest version!")
+	}
+
+	return nil
+}
+
+// runSelfUpdate performs the self-update of newapi-tools
+func runSelfUpdate(ctx context.Context) error {
+	fmt.Println("Starting self-update...")
+
+	// Get current binary path
+	currentBinary, err := os.Executable()
+	if err != nil {
+		return apperr.Wrap(apperr.CodeUpdateSelfFail, "", fmt.Errorf("get executable path: %w", err))
+	}
+
+	fmt.Printf("Current binary: %s\n", currentBinary)
+
+	// First perform a backup of new-api (if installed)
+	cfg := core.GetConfig()
+	if cfg != nil {
+		fmt.Println("Creating backup of new-api first...")
+		if err := performBackup(ctx, cfg); err != nil {
+			ui.L().Warn("pre-update backup failed", "error", err)
+			fmt.Printf("  Warning: backup failed: %v\n", err)
+		}
+	}
+
+	// Run self-update
+	opts := selfupdate.SelfUpdateOptions{
+		CurrentBinary: currentBinary,
+		Repo:          "Bonus520/newapi-tools",
+		OnProgress: func(written, total int64) {
+			if total > 0 {
+				pct := float64(written) / float64(total) * 100
+				fmt.Printf("\rDownloading... %.1f%%", pct)
+			}
+		},
+	}
+
+	result, err := selfupdate.Run(ctx, opts)
+	if err != nil {
+		return apperr.Wrap(apperr.CodeUpdateSelfFail, "", err)
+	}
+
+	fmt.Println("\nDownload complete!")
+	fmt.Printf("Updated to version: %s\n", result.NewVersion)
+	if result.BackupPath != "" {
+		fmt.Printf("Backup of old version: %s\n", result.BackupPath)
+	}
+	fmt.Println()
+	fmt.Println("Self-update complete! Please restart newapi-tools for changes to take effect.")
+
 	return nil
 }

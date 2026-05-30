@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -17,7 +18,7 @@ type AuditEntry struct {
 	Command    string    `json:"cmd"`
 	User       string    `json:"user"`
 	Args       []string  `json:"args"`
-	Result     string    `json:"result"`           // "ok" | "error"
+	Result     string    `json:"result"` // "ok" | "error"
 	Error      string    `json:"error,omitempty"`
 	DurationMs int64     `json:"duration_ms"`
 }
@@ -144,4 +145,91 @@ func (a *AuditLogger) rotate() error {
 // Path returns the audit log file path.
 func (a *AuditLogger) Path() string {
 	return a.path
+}
+
+// --- Audit Reader ---
+
+// AuditReader reads and queries audit log entries
+type AuditReader struct {
+	path string
+}
+
+// NewAuditReader creates an AuditReader for the given path
+func NewAuditReader(path string) *AuditReader {
+	if path == "" {
+		path = DefaultAuditPath()
+	}
+	return &AuditReader{path: path}
+}
+
+// ListOption contains filtering options for listing audit entries
+type ListOption struct {
+	Last    int       // Number of most recent entries to return (0 = all)
+	Command string    // Filter by command name (substring match)
+	Since   time.Time // Filter entries after this time (zero = no filter)
+}
+
+// List returns audit log entries matching the given options
+func (r *AuditReader) List(opt ListOption) ([]AuditEntry, error) {
+	// Open log file
+	file, err := os.Open(r.path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []AuditEntry{}, nil // No log file, return empty
+		}
+		return nil, fmt.Errorf("open audit log: %w", err)
+	}
+	defer file.Close()
+
+	var entries []AuditEntry
+	decoder := json.NewDecoder(file)
+
+	// Read all entries
+	for decoder.More() {
+		var entry AuditEntry
+		if err := decoder.Decode(&entry); err != nil {
+			// Skip malformed lines
+			continue
+		}
+		entries = append(entries, entry)
+	}
+
+	// Apply filters
+	filtered := r.filterEntries(entries, opt)
+
+	return filtered, nil
+}
+
+func (r *AuditReader) filterEntries(entries []AuditEntry, opt ListOption) []AuditEntry {
+	var result []AuditEntry
+
+	for _, entry := range entries {
+		// Filter by command
+		if opt.Command != "" {
+			if !strings.Contains(strings.ToLower(entry.Command), strings.ToLower(opt.Command)) {
+				continue
+			}
+		}
+
+		// Filter by time
+		if !opt.Since.IsZero() {
+			if entry.Timestamp.Before(opt.Since) {
+				continue
+			}
+		}
+
+		result = append(result, entry)
+	}
+
+	// Apply Last filter (take most recent N)
+	if opt.Last > 0 && len(result) > opt.Last {
+		result = result[len(result)-opt.Last:]
+	}
+
+	// Reverse to show newest first
+	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
+		result[i], result[j] = result[j], result[i]
+	}
+
+	return result
 }

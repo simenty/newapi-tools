@@ -72,4 +72,4 @@ i18n-extract:
 ## docs: Generate error code documentation
 docs:
 	@echo "Generating error code documentation..."
-	@cd cmd/gendocs && go run main.go > docs/errors.md 2>/dev/null || echo "gendocs not available yet"
+	@go run cmd/gendocs/main.go
