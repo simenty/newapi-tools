@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -52,26 +53,38 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 		return nil, fmt.Errorf("no asset found for %s", assetName)
 	}
 
-	// Create temp file for download
-	tmpFile, err := os.CreateTemp("", "newapi-update-*")
+	// Create temporary file for download
+	tmpFile, err := os.CreateTemp("", "newapi-update-*.tmp")
 	if err != nil {
 		return nil, fmt.Errorf("create temp file: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	tmpPath := tmpFile.Name()
+	tmpFile.Close()
+	
+	// Set secure permissions first (read/write only for owner)
+	if err := os.Chmod(tmpPath, 0600); err != nil {
+		os.Remove(tmpPath)
+		return nil, fmt.Errorf("set temp file permissions: %w", err)
+	}
+	defer os.Remove(tmpPath)
 
 	// Download asset
-	if err := downloadAsset(ctx, asset, tmpFile.Name(), opts.OnProgress); err != nil {
+	if err := downloadAsset(ctx, asset, tmpPath, opts.OnProgress); err != nil {
 		return nil, fmt.Errorf("download asset: %w", err)
 	}
 
 	// Verify SHA256 (optional but recommended)
-	if err := verifySHA256(tmpFile.Name(), asset); err != nil {
+	if err := verifySHA256(ctx, tmpPath, asset); err != nil {
 		return nil, fmt.Errorf("verify SHA256: %w", err)
 	}
 
+	// Now set executable permission after successful verification
+	if err := os.Chmod(tmpPath, 0755); err != nil {
+		return nil, fmt.Errorf("set executable permission: %w", err)
+	}
+
 	// Backup and replace
-	backupPath, err := backupAndReplace(opts.CurrentBinary, tmpFile.Name(), opts.BackupDir)
+	backupPath, err := backupAndReplace(opts.CurrentBinary, tmpPath, opts.BackupDir)
 	if err != nil {
 		return nil, fmt.Errorf("backup and replace: %w", err)
 	}
@@ -134,8 +147,8 @@ func downloadAsset(ctx context.Context, asset Asset, dest string, onProgress fun
 }
 
 // verifySHA256 verifies the SHA256 hash of the downloaded file
-// Tries to read from <asset>.sha256 file, or skips if not available
-func verifySHA256(filePath string, asset Asset) error {
+// Tries to read from <asset>.sha256 file from GitHub Release
+func verifySHA256(ctx context.Context, filePath string, asset Asset) error {
 	// Calculate hash of downloaded file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -149,10 +162,56 @@ func verifySHA256(filePath string, asset Asset) error {
 	}
 	calculatedHash := hex.EncodeToString(hash.Sum(nil))
 
-	// For now, just log it - in production you would compare with expected hash
-	// For this implementation, we'll skip actual verification
-	fmt.Printf("SHA256: %s\n", calculatedHash)
+	// Try to download SHA256 checksum file
+	sha256URL := asset.BrowserDownloadURL + ".sha256"
+	req, err := http.NewRequestWithContext(ctx, "GET", sha256URL, nil)
+	if err != nil {
+		fmt.Printf("Warning: Could not create SHA256 request: %v\n", err)
+		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Println("Continuing without verification...")
+		return nil
+	}
+	req.Header.Set("User-Agent", "newapi-tools")
 
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		fmt.Printf("Warning: SHA256 checksum file not available (status: %d)\n", resp.StatusCode)
+		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Println("Continuing without verification...")
+		if resp != nil {
+			resp.Body.Close()
+		}
+		return nil
+	}
+	defer resp.Body.Close()
+
+	// Read and parse SHA256
+	checksumData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("Warning: Could not read SHA256 file: %v\n", err)
+		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Println("Continuing without verification...")
+		return nil
+	}
+
+	// Extract the hash from the content (format: "<hash>  <filename>")
+	parts := strings.Fields(string(checksumData))
+	if len(parts) < 1 {
+		fmt.Printf("Warning: Invalid SHA256 file format\n")
+		fmt.Printf("SHA256 calculated: %s\n", calculatedHash)
+		fmt.Println("Continuing without verification...")
+		return nil
+	}
+
+	expectedHash := strings.ToLower(parts[0])
+	calculatedHashLower := strings.ToLower(calculatedHash)
+
+	if expectedHash != calculatedHashLower {
+		return fmt.Errorf("SHA256 verification failed:\nExpected: %s\nGot:      %s", expectedHash, calculatedHashLower)
+	}
+
+	fmt.Printf("SHA256 verified: %s\n", calculatedHashLower)
 	return nil
 }
 
@@ -199,7 +258,9 @@ func backupAndReplace(currentBin, newBin, backupDir string) (string, error) {
 	// Atomic replace: rename new file to current
 	if err := os.Rename(newBin, currentBin); err != nil {
 		// Try to restore backup if replace fails
-		_ = os.Rename(backupPath, currentBin)
+		if restoreErr := os.Rename(backupPath, currentBin); restoreErr != nil {
+			fmt.Printf("Warning: Failed to restore backup: %v\n", restoreErr)
+		}
 		return "", fmt.Errorf("replace binary: %w", err)
 	}
 

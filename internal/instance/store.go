@@ -69,7 +69,7 @@ func (s *Store) Save(instances []Instance) error {
 
 	// Atomic write: temp file then rename
 	tmpPath := s.path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0644); err != nil {
+	if err := os.WriteFile(tmpPath, data, 0600); err != nil {
 		return apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("write instances tmp: %w", err))
 	}
 
