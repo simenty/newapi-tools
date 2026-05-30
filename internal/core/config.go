@@ -13,9 +13,10 @@ import (
 
 // Config holds the full application configuration.
 type Config struct {
-	NewAPI NewAPIConfig `mapstructure:"newapi"`
-	Docker DockerConfig `mapstructure:"docker"`
-	Log    LogConfig    `mapstructure:"log"`
+	NewAPI   NewAPIConfig   `mapstructure:"newapi"`
+	Docker   DockerConfig   `mapstructure:"docker"`
+	Log      LogConfig      `mapstructure:"log"`
+	Instance InstanceConfig `mapstructure:"instance"`
 }
 
 // NewAPIConfig holds new-api specific configuration.
@@ -35,6 +36,11 @@ type DockerConfig struct {
 type LogConfig struct {
 	Level  string `mapstructure:"level"`
 	Format string `mapstructure:"format"`
+}
+
+// InstanceConfig holds multi-instance configuration.
+type InstanceConfig struct {
+	Active string `mapstructure:"active"` // Current active instance name
 }
 
 // DefaultConfig returns a Config populated with default values.
@@ -126,6 +132,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("docker.compose_cmd", defaults.Docker.ComposeCmd)
 	v.SetDefault("log.level", defaults.Log.Level)
 	v.SetDefault("log.format", defaults.Log.Format)
+	v.SetDefault("instance.active", defaults.Instance.Active)
 }
 
 // configDir returns the user's config directory path.
@@ -166,6 +173,9 @@ func WriteConfig(cfg *Config, path string) error {
 		"log": map[string]interface{}{
 			"level":  cfg.Log.Level,
 			"format": cfg.Log.Format,
+		},
+		"instance": map[string]interface{}{
+			"active": cfg.Instance.Active,
 		},
 	}
 

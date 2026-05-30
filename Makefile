@@ -9,7 +9,7 @@ LDFLAGS      := -X github.com/Bonus520/newapi-tools/internal/core.Version=$(VERS
                 -X github.com/Bonus520/newapi-tools/internal/core.GitCommit=$(GIT_COMMIT) \
                 -X github.com/Bonus520/newapi-tools/internal/core.BuildDate=$(BUILD_DATE)
 
-.PHONY: build clean test run lint fmt vet coverage install release snapshot check i18n-extract
+.PHONY: build clean test run lint fmt vet coverage install release snapshot check i18n-extract docs
 
 ## build: Build the binary with version info
 build:
@@ -68,3 +68,8 @@ help:
 i18n-extract:
 	@echo "Extracting i18n keys from source..."
 	@grep -rn 'i18n\.T(' internal/ | sed 's/.*i18n\.T("\([^"]*\)".*/\1/' | sort -u
+
+## docs: Generate error code documentation
+docs:
+	@echo "Generating error code documentation..."
+	@cd cmd/gendocs && go run main.go > docs/errors.md 2>/dev/null || echo "gendocs not available yet"

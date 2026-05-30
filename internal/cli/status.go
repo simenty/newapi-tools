@@ -18,10 +18,11 @@ import (
 )
 
 var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Show new-api status",
-	Long:  `Display the current status of the new-api container and related services.`,
-	RunE:  runStatus,
+	Use:     "status",
+	Aliases: []string{"ls"},
+	Short:   "Show new-api status",
+	Long:    `Display the current status of the new-api container and related services.`,
+	RunE:    runStatus,
 }
 
 func init() {
@@ -29,6 +30,7 @@ func init() {
 	statusCmd.Flags().Bool("watch", false, "watch mode: continuously refresh status")
 	statusCmd.Flags().Int("interval", 2, "refresh interval in seconds (for --watch)")
 	statusCmd.Flags().Bool("all", false, "show all newapi-related containers")
+	// Note: --instance is inherited from the root persistent flag; do NOT re-declare here.
 
 	rootCmd.AddCommand(statusCmd)
 }
@@ -42,6 +44,15 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	watch, _ := cmd.Flags().GetBool("watch")
 	interval, _ := cmd.Flags().GetInt("interval")
 	showAll, _ := cmd.Flags().GetBool("all")
+
+	// --instance is a persistent flag on rootCmd; read it via InheritedFlags or root.
+	instance, _ := cmd.Root().PersistentFlags().GetString("instance")
+
+	// --instance: stub for T05
+	if instance != "" {
+		fmt.Printf("instance support coming in T05 (requested: %s)\n", instance)
+		return nil
+	}
 
 	if interval < 1 {
 		interval = 2

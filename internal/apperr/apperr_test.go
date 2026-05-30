@@ -134,6 +134,8 @@ func TestAllCodesHaveSuggestions(t *testing.T) {
 		CodeMirrorApply,
 		CodeBackupFailed, CodeRestoreFailed,
 		CodePluginInit,
+		CodeUpdateCheckFail, CodeUpdateSelfFail, CodeUpdateVerifyFail,
+		CodeInstanceExists, CodeInstanceNotFound, CodeInstanceActive,
 	}
 	for _, code := range codes {
 		s := GetSuggestion(code)

@@ -4,9 +4,11 @@ package cli
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/docker"
+	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -186,36 +188,78 @@ func runMirrorApply(cmd *cobra.Command, args []string) error {
 	return applyAndReload()
 }
 
-// runMirrorTest checks connectivity to one or more mirrors.
+// runMirrorTest checks connectivity to one or more mirrors concurrently and
+// renders a latency table.
 func runMirrorTest(cmd *cobra.Command, args []string) error {
-	toTest := args
-	if len(toTest) == 0 {
-		// Test all currently configured mirrors
-		var err error
-		toTest, err = docker.GetCurrentMirrors()
+	var targets []docker.MirrorTestTarget
+
+	if len(args) > 0 {
+		// Resolve each argument (short name or full URL) into a target.
+		for _, arg := range args {
+			url, _ := docker.ResolveShortName(arg)
+			targets = append(targets, docker.MirrorTestTarget{Name: arg, URL: url})
+		}
+	} else {
+		// Try currently configured mirrors first.
+		configured, err := docker.GetCurrentMirrors()
 		if err != nil {
 			return err
 		}
-		if len(toTest) == 0 {
-			fmt.Println("No mirrors configured. Pass a mirror name or URL to test.")
-			return nil
-		}
-	}
-
-	allOK := true
-	for _, m := range toTest {
-		url, _ := docker.ResolveShortName(m)
-		fmt.Printf("  Testing %-52s ... ", url)
-		if err := docker.TestMirror(url); err != nil {
-			fmt.Printf("FAIL (%v)\n", err)
-			allOK = false
+		if len(configured) > 0 {
+			// Reverse-map URLs to names where possible.
+			urlToName := make(map[string]string, len(docker.BuiltinMirrors))
+			for name, url := range docker.BuiltinMirrors {
+				urlToName[url] = name
+			}
+			for _, url := range configured {
+				name := url
+				if n, ok := urlToName[url]; ok {
+					name = n
+				}
+				targets = append(targets, docker.MirrorTestTarget{Name: name, URL: url})
+			}
 		} else {
-			fmt.Println("OK")
+			// Fall back to all built-in mirrors in a deterministic order.
+			order := []string{"tuna", "aliyun", "ustc", "163", "azure", "daocloud"}
+			for _, name := range order {
+				if url, ok := docker.BuiltinMirrors[name]; ok {
+					targets = append(targets, docker.MirrorTestTarget{Name: name, URL: url})
+				}
+			}
 		}
 	}
 
-	if !allOK {
-		return fmt.Errorf("one or more mirrors are unreachable")
+	if len(targets) == 0 {
+		fmt.Println("No mirrors to test.")
+		return nil
+	}
+
+	fmt.Printf("Testing %d mirror(s) concurrently (timeout 3s)...\n\n", len(targets))
+
+	results := docker.ConcurrentMirrorTest(targets, 6, 3*time.Second)
+
+	// Render results as a table.
+	tbl := ui.NewTable("名称", "URL", "延迟", "状态")
+	allFailed := true
+	for _, r := range results {
+		latencyStr := "FAIL"
+		statusStr := "超时"
+		if r.Reachable {
+			latencyStr = r.Latency.Round(time.Millisecond).String()
+			statusStr = "OK"
+			allFailed = false
+		} else if r.Error != "" {
+			statusStr = r.Error
+			if len(statusStr) > 30 {
+				statusStr = statusStr[:30] + "..."
+			}
+		}
+		tbl.AddRow(r.Name, r.URL, latencyStr, statusStr)
+	}
+	tbl.Render()
+
+	if allFailed {
+		return fmt.Errorf("all mirrors are unreachable")
 	}
 	return nil
 }

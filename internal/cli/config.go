@@ -5,11 +5,13 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/Bonus520/newapi-tools/internal/apperr"
 	"github.com/Bonus520/newapi-tools/internal/core"
+	"github.com/Bonus520/newapi-tools/internal/security"
 	"github.com/Bonus520/newapi-tools/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -32,8 +34,9 @@ Valid keys:
   newapi.docker_image  Docker image to use
   newapi.backup_dir    Backup storage directory
   docker.compose_cmd   Docker compose command
-  log.level            Log level (debug|info|warn|error)
-  log.format           Log format (text|json)`,
+  log.level             Log level (debug|info|warn|error)
+  log.format            Log format (text|json)
+  instance.active      Current active instance name`,
 	Args: cobra.ExactArgs(2),
 	RunE: runConfigSet,
 }
@@ -45,11 +48,21 @@ var configInitCmd = &cobra.Command{
 	RunE:  runConfigInit,
 }
 
+var configChmodCmd = &cobra.Command{
+	Use:   "chmod",
+	Short: "Fix configuration file permissions (chmod 600)",
+	Long: `Fix permissions on sensitive configuration files to 600 (owner read/write only).
+Files fixed: .env, docker-compose.yml in the new-api home directory, and the active config file.
+This is a no-op on Windows.`,
+	RunE: runConfigChmod,
+}
+
 func init() {
 	configCmd.Flags().Bool("json", false, "output in JSON format")
 
 	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configInitCmd)
+	configCmd.AddCommand(configChmodCmd)
 	rootCmd.AddCommand(configCmd)
 }
 
@@ -79,6 +92,7 @@ func printConfigTable(cfg *core.Config) {
 	fmt.Printf("  %-20s %s\n", "docker.compose_cmd", cfg.Docker.ComposeCmd)
 	fmt.Printf("  %-20s %s\n", "log.level", cfg.Log.Level)
 	fmt.Printf("  %-20s %s\n", "log.format", cfg.Log.Format)
+	fmt.Printf("  %-20s %s\n", "instance.active", cfg.Instance.Active)
 	fmt.Println(strings.Repeat("-", 50))
 
 	configFile := core.ConfigFileUsed()
@@ -103,6 +117,9 @@ func printConfigJSON(cfg *core.Config) error {
   "log": {
     "level": %q,
     "format": %q
+  },
+  "instance": {
+    "active": %q
   }
 }
 `,
@@ -113,6 +130,7 @@ func printConfigJSON(cfg *core.Config) error {
 		cfg.Docker.ComposeCmd,
 		cfg.Log.Level,
 		cfg.Log.Format,
+		cfg.Instance.Active,
 	)
 	return nil
 }
@@ -128,6 +146,7 @@ var validKeys = map[string]string{
 	"docker.compose_cmd":  "string",
 	"log.level":           "string",
 	"log.format":          "string",
+	"instance.active":     "string",
 }
 
 func runConfigSet(cmd *cobra.Command, args []string) error {
@@ -199,6 +218,8 @@ func applyConfigValue(cfg *core.Config, key, value, keyType string) error {
 			return fmt.Errorf("invalid log format: %s (must be text|json)", value)
 		}
 		cfg.Log.Format = value
+	case "instance.active":
+		cfg.Instance.Active = value
 	default:
 		return fmt.Errorf("unknown key: %s", key)
 	}
@@ -269,6 +290,41 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 
 	fmt.Printf("Configuration saved to %s\n", configFile)
 	ui.L().Info("config initialized", "file", configFile)
+	return nil
+}
+
+// ---- config chmod ----
+
+// runConfigChmod fixes permissions (chmod 600) on sensitive config files.
+func runConfigChmod(cmd *cobra.Command, args []string) error {
+	cfg := core.GetConfig()
+	if cfg == nil {
+		return fmt.Errorf("configuration not loaded")
+	}
+
+	// Build list of files to fix.
+	targets := []string{
+		filepath.Join(cfg.NewAPI.Home, ".env"),
+		filepath.Join(cfg.NewAPI.Home, "docker-compose.yml"),
+	}
+	if cf := core.ConfigFileUsed(); cf != "" {
+		targets = append(targets, cf)
+	}
+
+	var hadError bool
+	for _, path := range targets {
+		if err := security.FixConfigPerm(path); err != nil {
+			fmt.Fprintf(os.Stderr, "  ERROR: %v\n", err)
+			hadError = true
+		} else {
+			fmt.Printf("  chmod 600 %s\n", path)
+		}
+	}
+
+	if hadError {
+		return fmt.Errorf("one or more files could not be fixed")
+	}
+	fmt.Println("Done. All sensitive config files have been secured.")
 	return nil
 }
 

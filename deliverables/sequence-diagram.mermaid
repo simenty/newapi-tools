@@ -1,0 +1,53 @@
+sequenceDiagram
+    participant User
+    participant CLI as install.go
+    participant Wizard as runInstallWizard
+    participant Core as core.Config
+    participant Docker as docker.Client
+    participant FS as filesystem
+
+    User->>CLI: newapi install --interactive
+    CLI->>Core: GetConfig()
+    CLI->>Wizard: runInstallWizard(cfg)
+
+    Note over Wizard: Step 1/7: 端口
+    Wizard->>User: [1/7] 请选择端口 (默认 3000)
+    User->>Wizard: 8080
+
+    Note over Wizard: Step 2/7: 域名
+    Wizard->>User: [2/7] 域名 (可选, 默认无)
+    User->>Wizard: api.example.com
+
+    Note over Wizard: Step 3/7: 数据库
+    Wizard->>User: [3/7] 数据库类型 (mysql/sqlite)
+    User->>Wizard: mysql
+
+    Note over Wizard: Step 4/7: Redis
+    Wizard->>User: [4/7] Redis 地址 (默认 redis:6379)
+    User->>Wizard: (Enter)
+
+    Note over Wizard: Step 5/7: 镜像
+    Wizard->>User: [5/7] Docker 镜像 (默认 calciumion/new-api:latest)
+    User->>Wizard: (Enter)
+
+    Note over Wizard: Step 6/7: 镜像加速
+    Wizard->>User: [6/7] 是否自动选择最快镜像? (Y/n)
+    User->>Wizard: Y
+
+    Note over Wizard: Step 7/7: 确认
+    Wizard->>User: 显示配置摘要 + "确认安装? (Y/n)"
+    User->>Wizard: Y
+
+    Wizard-->>CLI: opts (installOptions)
+
+    CLI->>Docker: ImagePull(image)
+    Docker-->>CLI: pull complete
+
+    CLI->>FS: WriteFile(docker-compose.yml)
+    CLI->>FS: WriteFile(.env)
+
+    CLI->>Docker: ComposeUp(home)
+    Docker-->>CLI: containers started
+
+    CLI->>CLI: waitForHealth(port)
+    CLI-->>User: 安装完成摘要

@@ -103,6 +103,7 @@ func init() {
 	rootCmd.PersistentFlags().String("lang", "", "language for output messages (e.g. zh-CN, en)")
 	rootCmd.PersistentFlags().Bool("debug", false, "enable debug logging (most verbose)")
 	rootCmd.PersistentFlags().Bool("verbose", false, "enable verbose (info-level) logging")
+	rootCmd.PersistentFlags().String("instance", "", "instance name to operate on (default is the active instance)")
 
 	rootCmd.Version = core.Version
 	rootCmd.SetVersionTemplate(fmt.Sprintf("newapi-tools %s (commit: %s, built: %s)\n", core.Version, core.GitCommit, core.BuildDate))

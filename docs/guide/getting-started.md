@@ -5,30 +5,42 @@
 === "Linux (amd64)"
 
     ```bash
-    curl -fsSL https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_linux_amd64.tar.gz | tar xz
-    sudo mv newapi-tools /usr/local/bin/
+    curl -fsSL -O https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Linux_x86_64.zip
+    unzip newapi_v3.1.0_Linux_x86_64.zip
+    sudo mv newapi_v3.1.0_linux_amd64 /usr/local/bin/newapi-tools
+    sudo chmod +x /usr/local/bin/newapi-tools
     ```
 
 === "Linux (arm64)"
 
     ```bash
-    curl -fsSL https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_linux_arm64.tar.gz | tar xz
-    sudo mv newapi-tools /usr/local/bin/
+    curl -fsSL -O https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Linux_arm64.zip
+    unzip newapi_v3.1.0_Linux_arm64.zip
+    sudo mv newapi_v3.1.0_linux_arm64 /usr/local/bin/newapi-tools
+    sudo chmod +x /usr/local/bin/newapi-tools
     ```
 
-=== "macOS (amd64)"
+=== "macOS (Intel)"
 
     ```bash
-    curl -fsSL https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_darwin_amd64.tar.gz | tar xz
-    sudo mv newapi-tools /usr/local/bin/
+    curl -fsSL -O https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Darwin_x86_64.zip
+    unzip newapi_v3.1.0_Darwin_x86_64.zip
+    sudo mv newapi_v3.1.0_darwin_amd64 /usr/local/bin/newapi-tools
+    sudo chmod +x /usr/local/bin/newapi-tools
     ```
 
-=== "macOS (arm64 / Apple Silicon)"
+=== "macOS (Apple Silicon)"
 
     ```bash
-    curl -fsSL https://github.com/simenty/newapi-tools/releases/latest/download/newapi-tools_darwin_arm64.tar.gz | tar xz
-    sudo mv newapi-tools /usr/local/bin/
+    curl -fsSL -O https://github.com/simenty/newapi-tools/releases/latest/download/newapi_v3.1.0_Darwin_arm64.zip
+    unzip newapi_v3.1.0_Darwin_arm64.zip
+    sudo mv newapi_v3.1.0_darwin_arm64 /usr/local/bin/newapi-tools
+    sudo chmod +x /usr/local/bin/newapi-tools
     ```
+
+=== "Windows (amd64)"
+
+    从 [GitHub Releases](https://github.com/simenty/newapi-tools/releases/latest) 下载 `newapi_v3.1.0_Windows_x86_64.zip`，解压后将 `newapi_v3.1.0_windows_amd64.exe` 重命名为 `newapi-tools.exe` 并加入 PATH。
 
 ## 前置条件
 
@@ -40,6 +52,9 @@
 ```bash
 # 一键部署（自动拉取镜像、生成配置、启动 new-api + MySQL + Redis）
 newapi-tools install
+
+# 交互式向导（自定义端口/数据库/Redis）
+newapi-tools install --interactive
 
 # 自定义端口
 newapi-tools install --port 8080
@@ -57,6 +72,12 @@ newapi-tools install --mirror tuna
 ```bash
 # 查看容器状态
 newapi-tools status
+
+# 实时监控（每 2 秒刷新）
+newapi-tools status --watch --interval 2
+
+# 显示所有关联容器（含 CPU/MEM 统计）
+newapi-tools status --all
 
 # JSON 格式输出（方便脚本处理）
 newapi-tools status --json

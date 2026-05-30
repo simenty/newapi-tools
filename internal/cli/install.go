@@ -41,9 +41,12 @@ func init() {
 
 // installOptions holds the user's choices from the interactive wizard.
 type installOptions struct {
-	Port       int
-	DBType     string // "mysql" or "sqlite"
-	RedisAddr  string
+	Port        int
+	Domain      string // optional domain name
+	DBType      string // "mysql" or "sqlite"
+	RedisAddr   string
+	DockerImage string // Docker image to use
+	AutoMirror  bool   // whether to auto-select the fastest registry mirror
 }
 
 func runInstall(cmd *cobra.Command, args []string) error {
@@ -66,9 +69,11 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Interactive wizard
 	opts := installOptions{
-		Port:      cfg.NewAPI.Port,
-		DBType:    "mysql",
-		RedisAddr: "redis:6379",
+		Port:        cfg.NewAPI.Port,
+		DBType:      "mysql",
+		RedisAddr:   "redis:6379",
+		DockerImage: cfg.NewAPI.DockerImage,
+		AutoMirror:  true,
 	}
 	if interactive {
 		var err error
@@ -77,6 +82,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		cfg.NewAPI.Port = opts.Port
+		if opts.DockerImage != "" {
+			cfg.NewAPI.DockerImage = opts.DockerImage
+		}
 	}
 
 	// Apply mirror if specified
@@ -188,51 +196,128 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// runInstallWizard runs the interactive installation wizard.
+// runInstallWizard runs the interactive 7-step installation wizard.
+// It loops back to step 1 if the user enters 'e' at the confirmation step.
 func runInstallWizard(cfg *core.Config) (installOptions, error) {
+	defaultImage := cfg.NewAPI.DockerImage
+	if defaultImage == "" {
+		defaultImage = "calciumion/new-api:latest"
+	}
+
 	opts := installOptions{
-		Port:      cfg.NewAPI.Port,
-		DBType:    "mysql",
-		RedisAddr: "redis:6379",
+		Port:        cfg.NewAPI.Port,
+		Domain:      "",
+		DBType:      "mysql",
+		RedisAddr:   "redis:6379",
+		DockerImage: defaultImage,
+		AutoMirror:  true,
 	}
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	fmt.Println()
-	fmt.Println("🚀 NewAPI 安装向导")
-	fmt.Println()
+	for {
+		fmt.Println()
+		fmt.Println("🚀 NewAPI 安装向导")
+		fmt.Println()
 
-	// Step 1: Port
-	fmt.Printf("[1/3] 请选择端口 (默认 %d): ", opts.Port)
-	if scanner.Scan() {
-		input := strings.TrimSpace(scanner.Text())
-		if input != "" {
-			var port int
-			if _, err := fmt.Sscanf(input, "%d", &port); err == nil && port > 0 && port <= 65535 {
-				opts.Port = port
+		// Step 1/7: Port
+		fmt.Printf("[1/7] 请选择端口 (默认 %d): ", opts.Port)
+		if scanner.Scan() {
+			if input := strings.TrimSpace(scanner.Text()); input != "" {
+				var port int
+				if _, err := fmt.Sscanf(input, "%d", &port); err == nil && port > 0 && port <= 65535 {
+					opts.Port = port
+				} else {
+					fmt.Printf("  无效端口，保持默认值 %d\n", opts.Port)
+				}
 			}
 		}
-	}
 
-	// Step 2: Database type
-	fmt.Printf("[2/3] 请选择数据库 (mysql/sqlite，默认 %s): ", opts.DBType)
-	if scanner.Scan() {
-		input := strings.TrimSpace(scanner.Text())
-		if input != "" {
-			lower := strings.ToLower(input)
-			if lower == "mysql" || lower == "sqlite" {
-				opts.DBType = lower
+		// Step 2/7: Domain (optional)
+		fmt.Printf("[2/7] 请输入域名 (可选，直接回车跳过): ")
+		if scanner.Scan() {
+			opts.Domain = strings.TrimSpace(scanner.Text())
+		}
+
+		// Step 3/7: Database type
+		fmt.Printf("[3/7] 请选择数据库 (mysql/sqlite，默认 %s): ", opts.DBType)
+		if scanner.Scan() {
+			if input := strings.TrimSpace(scanner.Text()); input != "" {
+				lower := strings.ToLower(input)
+				if lower == "mysql" || lower == "sqlite" {
+					opts.DBType = lower
+				} else {
+					fmt.Printf("  无效数据库类型，保持默认值 %s\n", opts.DBType)
+				}
 			}
 		}
-	}
 
-	// Step 3: Redis address
-	fmt.Printf("[3/3] Redis 地址 (默认 %s): ", opts.RedisAddr)
-	if scanner.Scan() {
-		input := strings.TrimSpace(scanner.Text())
-		if input != "" {
-			opts.RedisAddr = input
+		// Step 4/7: Redis address
+		fmt.Printf("[4/7] Redis 地址 (默认 %s): ", opts.RedisAddr)
+		if scanner.Scan() {
+			if input := strings.TrimSpace(scanner.Text()); input != "" {
+				opts.RedisAddr = input
+			}
 		}
+
+		// Step 5/7: Docker image
+		fmt.Printf("[5/7] Docker 镜像 (默认 %s): ", opts.DockerImage)
+		if scanner.Scan() {
+			if input := strings.TrimSpace(scanner.Text()); input != "" {
+				opts.DockerImage = input
+			}
+		}
+
+		// Step 6/7: Auto mirror
+		autoMirrorDefault := "Y/n"
+		if !opts.AutoMirror {
+			autoMirrorDefault = "y/N"
+		}
+		fmt.Printf("[6/7] 自动选择最快镜像加速？ (%s): ", autoMirrorDefault)
+		if scanner.Scan() {
+			input := strings.TrimSpace(strings.ToLower(scanner.Text()))
+			switch input {
+			case "y", "yes", "":
+				opts.AutoMirror = true
+			case "n", "no":
+				opts.AutoMirror = false
+			}
+		}
+
+		// Step 7/7: Summary + confirm
+		fmt.Println()
+		fmt.Println("[7/7] 安装摘要")
+		fmt.Println("  ─────────────────────────────────────")
+		fmt.Printf("  端口:       %d\n", opts.Port)
+		if opts.Domain != "" {
+			fmt.Printf("  域名:       %s\n", opts.Domain)
+		}
+		fmt.Printf("  数据库:     %s\n", opts.DBType)
+		fmt.Printf("  Redis:      %s\n", opts.RedisAddr)
+		fmt.Printf("  镜像:       %s\n", opts.DockerImage)
+		autoMirrorStr := "否"
+		if opts.AutoMirror {
+			autoMirrorStr = "是"
+		}
+		fmt.Printf("  自动镜像:   %s\n", autoMirrorStr)
+		fmt.Println("  ─────────────────────────────────────")
+		fmt.Println()
+		fmt.Print("确认安装? (回车确认 / 输入 'e' 重新配置 / 'q' 取消): ")
+
+		if scanner.Scan() {
+			input := strings.TrimSpace(strings.ToLower(scanner.Text()))
+			switch input {
+			case "e":
+				// Restart wizard loop
+				continue
+			case "q", "quit", "exit":
+				return opts, fmt.Errorf("安装已取消")
+			default:
+				// Empty or any other key → confirm
+			}
+		}
+
+		break
 	}
 
 	fmt.Println()

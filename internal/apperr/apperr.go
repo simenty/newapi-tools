@@ -21,6 +21,12 @@ const (
 	CodeBackupFailed     = "B001" // Backup failed
 	CodeRestoreFailed    = "B002" // Restore failed
 	CodePluginInit       = "P001" // Plugin initialization failed
+	CodeUpdateCheckFail  = "U001" // 版本检查失败
+	CodeUpdateSelfFail   = "U002" // 自更新失败
+	CodeUpdateVerifyFail = "U003" // SHA256 校验失败
+	CodeInstanceExists   = "I003" // 实例名已存在
+	CodeInstanceNotFound = "I004" // 实例不存在
+	CodeInstanceActive   = "I005" // 实例为当前活跃实例，无法删除
 )
 
 // suggestions maps error codes to user-friendly fix suggestions.
@@ -38,6 +44,12 @@ var suggestions = map[string]string{
 	"B001": "请检查磁盘空间和备份路径权限",
 	"B002": "请检查备份文件是否完整",
 	"P001": "请检查插件目录和 metadata.yml 格式",
+	"U001": "请检查网络连接或稍后重试",
+	"U002": "自更新失败，请手动下载最新版本",
+	"U003": "下载文件校验失败，请重试或手动下载",
+	"I003": "请使用其他实例名，或先删除已有实例",
+	"I004": "请使用 'newapi-tools instance list' 查看所有实例",
+	"I005": "请先切换到其他实例再删除: newapi-tools instance switch <name>",
 }
 
 // AppError represents a structured application error with a code, message, and suggestion.

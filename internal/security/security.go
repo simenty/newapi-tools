@@ -43,6 +43,21 @@ func CheckConfigPerm(path string) error {
 	return nil
 }
 
+// FixConfigPerm attempts to chmod 600 the given file.
+// On Windows it is a no-op. Returns nil if the file doesn't exist.
+func FixConfigPerm(path string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	}
+	if err := os.Chmod(path, 0600); err != nil {
+		return fmt.Errorf("failed to chmod 600 %s: %w", path, err)
+	}
+	return nil
+}
+
 // CheckDockerGroup checks whether the current user is a member of the docker group.
 // On Linux, it checks the user's group memberships. On Windows, it returns (true, nil)
 // since Docker Desktop handles group membership differently.

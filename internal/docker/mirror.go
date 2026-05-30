@@ -4,10 +4,16 @@ package docker
 import (
 	"encoding/json"
 	"fmt"
+	"math"
+	"net/http"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/Bonus520/newapi-tools/internal/core"
 )
 
 const daemonJSONPath = "/etc/docker/daemon.json"
@@ -209,12 +215,100 @@ func ResolveShortName(nameOrURL string) (string, bool) {
 	return nameOrURL, false
 }
 
+// MirrorTestTarget holds the name and URL of a mirror to test.
+type MirrorTestTarget struct {
+	Name string
+	URL  string
+}
+
 // MirrorTestResult holds the result of testing a single mirror.
 type MirrorTestResult struct {
-	Name     string
-	URL      string
+	Name      string
+	URL       string
 	Reachable bool
-	Latency  time.Duration
+	Latency   time.Duration
+	Error     string // failure reason; empty on success
+}
+
+// ConcurrentMirrorTest tests multiple mirrors concurrently using HTTP HEAD requests.
+// concurrency controls the maximum number of parallel requests (0 or negative uses 6).
+// timeout is the per-request deadline (0 uses 3s).
+// Results are returned sorted by Latency ascending; unreachable mirrors are placed last
+// (their Latency is set to math.MaxInt64 nanoseconds).
+func ConcurrentMirrorTest(mirrors []MirrorTestTarget, concurrency int, timeout time.Duration) []MirrorTestResult {
+	if concurrency <= 0 {
+		concurrency = 6
+	}
+	if timeout <= 0 {
+		timeout = 3 * time.Second
+	}
+
+	results := make([]MirrorTestResult, len(mirrors))
+	sem := make(chan struct{}, concurrency)
+	var wg sync.WaitGroup
+
+	client := &http.Client{
+		Timeout: timeout,
+		// Don't follow redirects for latency accuracy.
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	for i, m := range mirrors {
+		wg.Add(1)
+		go func(idx int, target MirrorTestTarget) {
+			defer wg.Done()
+
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			url := strings.TrimRight(target.URL, "/") + "/v2/"
+			req, err := http.NewRequest(http.MethodHead, url, nil)
+			if err != nil {
+				results[idx] = MirrorTestResult{
+					Name:      target.Name,
+					URL:       target.URL,
+					Reachable: false,
+					Latency:   time.Duration(math.MaxInt64),
+					Error:     err.Error(),
+				}
+				return
+			}
+			req.Header.Set("User-Agent", "newapi-tools/"+core.Version)
+
+			start := time.Now()
+			resp, err := client.Do(req)
+			latency := time.Since(start)
+			if err != nil {
+				results[idx] = MirrorTestResult{
+					Name:      target.Name,
+					URL:       target.URL,
+					Reachable: false,
+					Latency:   time.Duration(math.MaxInt64),
+					Error:     err.Error(),
+				}
+				return
+			}
+			_ = resp.Body.Close()
+
+			results[idx] = MirrorTestResult{
+				Name:      target.Name,
+				URL:       target.URL,
+				Reachable: true,
+				Latency:   latency,
+			}
+		}(i, m)
+	}
+
+	wg.Wait()
+
+	// Sort: reachable mirrors by ascending latency; unreachable mirrors at the end.
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Latency < results[j].Latency
+	})
+
+	return results
 }
 
 // AutoSelectMirror tests all built-in mirrors concurrently and returns the

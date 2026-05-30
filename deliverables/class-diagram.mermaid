@@ -1,0 +1,118 @@
+classDiagram
+    class Config {
+        +NewAPIConfig NewAPI
+        +DockerConfig Docker
+        +LogConfig Log
+        +InstanceConfig Instance
+    }
+    class NewAPIConfig {
+        +string Home
+        +int Port
+        +string DockerImage
+        +string BackupDir
+    }
+    class InstanceConfig {
+        +string Active
+    }
+
+    class ReleaseInfo {
+        +string TagName
+        +string Name
+        +time PublishedAt
+        +string HTMLURL
+        +[]Asset Assets
+    }
+    class Asset {
+        +string Name
+        +string BrowserDownloadURL
+        +int64 Size
+    }
+    class SelfUpdateOptions {
+        +string CurrentBinary
+        +string Repo
+        +string BackupDir
+        +func OnProgress
+    }
+    class SelfUpdateResult {
+        +string PreviousVersion
+        +string NewVersion
+        +string BinaryPath
+        +string BackupPath
+    }
+
+    class Instance {
+        +string Name
+        +string Home
+        +int Port
+        +string DockerImage
+        +string ComposeProject
+        +string CreatedAt
+        +bool Active
+    }
+    class Store {
+        -string path
+        -sync.Mutex mu
+        +Load() []Instance
+        +Save(instances)
+        +Add(inst Instance)
+        +Remove(name string)
+        +Get(name string) Instance
+        +SetActive(name string)
+        +GetActive() Instance
+        +List() []Instance
+    }
+
+    class AuditReader {
+        -string path
+        +List(opt ListOption) []AuditEntry
+    }
+    class ListOption {
+        +int Last
+        +string Cmd
+        +time Since
+    }
+    class AuditEntry {
+        +time Timestamp
+        +string Command
+        +string User
+        +[]string Args
+        +string Result
+        +string Error
+        +int64 DurationMs
+    }
+
+    class MirrorTestTarget {
+        +string Name
+        +string URL
+    }
+    class MirrorTestResult {
+        +string Name
+        +string URL
+        +bool Reachable
+        +time Latency
+        +string Error
+    }
+
+    class checkResult {
+        +string Name
+        +string Status
+        +string Message
+        +VerboseCheck Detail
+    }
+    class VerboseCheck {
+        +string FilePath
+        +string Command
+        +string Expected
+        +string Actual
+        +string RawOutput
+    }
+
+    Config --> NewAPIConfig
+    Config --> InstanceConfig
+    ReleaseInfo --> Asset
+    SelfUpdateOptions ..> ReleaseInfo : uses
+    SelfUpdateOptions ..> SelfUpdateResult : produces
+    Store --> Instance : manages
+    AuditReader --> AuditEntry : reads
+    AuditReader --> ListOption : accepts
+    checkResult --> VerboseCheck : optional
