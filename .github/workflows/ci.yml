@@ -48,25 +48,28 @@ jobs:
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
         run: |
-          $result = go tool cover -func coverage.out
-          $totalLine = $result | Select-String "total"
-          if (-not $totalLine) {
-            Write-Host "ERROR: go tool cover failed or could not find total line"
-            Write-Host $result
-            exit 1
-          }
-          if ($totalLine.Line -match '(\d+\.\d+)%') {
-            $coverage = [double]$Matches[1]
-            Write-Host "Coverage: ${coverage}%"
-            if ($coverage -lt 20) {
-              Write-Host "ERROR: Coverage too low: ${coverage}% < 20%"
-              exit 1
+          $totalStmts = 0
+          $coveredStmts = 0
+          Get-Content coverage.out | Select-Object -Skip 1 | ForEach-Object {
+            $parts = $_ -split '\s+'
+            if ($parts.Count -ge 3) {
+              $numStmts = [int]$parts[$parts.Count - 2]
+              $count = [int]$parts[$parts.Count - 1]
+              $totalStmts += $numStmts
+              if ($count -gt 0) { $coveredStmts += $numStmts }
             }
-            Write-Host "Coverage check passed!"
-          } else {
-            Write-Host "ERROR: Could not parse coverage from: $($totalLine.Line)"
+          }
+          if ($totalStmts -eq 0) {
+            Write-Host "ERROR: No coverage data found"
             exit 1
           }
+          $coverage = [math]::Round($coveredStmts / $totalStmts * 100, 1)
+          Write-Host "Coverage: ${coverage}%"
+          if ($coverage -lt 20) {
+            Write-Host "ERROR: Coverage too low: ${coverage}% < 20%"
+            exit 1
+          }
+          Write-Host "Coverage check passed!"
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
