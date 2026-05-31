@@ -47,26 +47,15 @@ jobs:
 
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
+        shell: bash
         run: |
-          $exists = Test-Path coverage.out
-          Write-Host "coverage.out exists: $exists"
-          Get-ChildItem coverage* -Name
-          $raw = go tool cover -func coverage.out 2>&1
-          Write-Host "Raw output length: $($raw.Length)"
-          $line = $raw | Select-String "total"
-          if (-not $line) {
-            Write-Host "Could not parse coverage output!"
-            Write-Host "First 500 chars: $($raw | Select-Object -First 10)"
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
+          echo "Coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 20" | bc -l) )); then
+            echo "Coverage too low: ${COVERAGE}% < 20%"
             exit 1
-          }
-          $coverage = ($line -replace '.*\(statements\)\s+(\d+\.?\d*)%.*', '$1')
-          Write-Host "Coverage: ${coverage}%"
-          $coverageValue = [double]$coverage
-          if ($coverageValue -lt 20) {
-            Write-Host "Coverage too low: ${coverage}% < 20%"
-            exit 1
-          }
-          Write-Host "Coverage check passed!"
+          fi
+          echo "Coverage check passed!"
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
