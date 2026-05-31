@@ -1,4 +1,4 @@
-# NewAPI Tools V3.2
+# NewAPI Tools V3.4
 
 Docker management platform for [new-api](https://github.com/Calcium-Ion/new-api), rewritten in Go.
 
@@ -23,20 +23,25 @@ make build
 
 # Speed up image pulls (China mainland)
 ./dist/newapi-tools mirror add tuna
+
+# Check for self-update
+./dist/newapi-tools update --check
 ```
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `install` | Deploy new-api with Docker Compose (pulls image, generates config, starts containers) |
-| `status` | Show container status. Use `--json` for JSON output |
+| `install` | Deploy new-api with Docker Compose (interactive wizard with `--interactive`) |
+| `status` / `ls` | Show container status. Use `--json` for JSON output, `--instance <name>` for multi-instance |
 | `backup` | Backup new-api data (configs + MySQL dump + data dir) to a `.tar.gz` archive |
 | `restore` | Restore from a backup archive. Use `--file latest` to auto-pick newest |
-| `update` | Update new-api to latest image. Auto-backup before update (use `--backup=false` to skip) |
-| `doctor` | Run 10 diagnostic checks: Docker, containers, ports, disk, config files. Use `--fix` to auto-repair |
-| `config` | View or modify configuration. Subcommands: `set <key> <value>`, `init` (interactive wizard) |
+| `update` | Update new-api image, or `--self` to update the CLI binary itself, `--check` to inspect |
+| `doctor` | Run 12 diagnostic checks: Docker, containers, ports, disk, config files, permissions. Use `--fix` to auto-repair, `--verbose` for detail |
+| `config` | View or modify configuration. Subcommands: `set`, `init` (interactive wizard), `chmod` (secure file perms) |
 | `mirror` | Manage Docker registry mirrors to speed up image pulls in China |
+| `instance` | Manage multiple new-api instances: `add`, `list`, `switch`, `remove` |
+| `audit` | View command audit log: `list --last N`, `--cmd`, `--since`, `--json` |
 | `version` | Print version and build info |
 
 ### Examples
@@ -63,6 +68,12 @@ newapi-tools update --image calciumion/new-api:v0.3.x
 # Update using a registry mirror
 newapi-tools update --mirror tuna
 
+# Check for CLI updates
+newapi-tools update --check
+
+# Self-update the CLI binary
+newapi-tools update --self
+
 # Full diagnostic report in JSON
 newapi-tools doctor --json
 
@@ -81,6 +92,15 @@ newapi-tools config set newapi.domain newapi.example.com
 
 # Interactive config wizard
 newapi-tools config init
+
+# Fix config file permissions (chmod 600)
+newapi-tools config chmod
+
+# View audit log (last 10 entries)
+newapi-tools audit list --last 10
+
+# View audit log filtered by command
+newapi-tools audit list --cmd install
 
 # Use custom config file
 newapi-tools --config /etc/newapi-tools.yml status
@@ -133,17 +153,25 @@ Built-in mirror shortcuts: `tuna`, `aliyun`, `ustc`, `163`, `azure`, `daocloud`
 ```
 newapi-tools/
 ├── cmd/newapi/          # Entry point (main.go)
+├── cmd/gendocs/         # Error code doc generator
 ├── internal/
-│   ├── cli/             # Cobra commands (install/status/backup/restore/update/doctor/config/mirror/version)
+│   ├── apperr/          # Structured error codes & suggestions
+│   ├── audit/           # Audit logging (JSON Lines + ring buffer query)
+│   ├── cli/             # Cobra commands (12 commands)
 │   ├── core/            # Config, version constants
 │   ├── docker/          # Docker CLI wrapper + compose + mirror management
+│   ├── i18n/            # Internationalization (zh-CN / en)
+│   ├── instance/        # Multi-instance metadata store
 │   ├── osutil/          # OS adapters (Debian/RHEL/Fedora/Arch)
-│   ├── plugin/          # Plugin system (ShellPlugin/GoPlugin/Loader)
+│   ├── plugin/          # Plugin system (ShellPlugin/GoPlugin)
 │   ├── registry/        # Command registry
-│   └── ui/              # Output formatting (table, logger)
+│   ├── security/        # Permissions checking & fixing
+│   ├── selfupdate/      # CLI self-update (GitHub Releases)
+│   └── ui/              # Output formatting (table, logger, progress)
 ├── plugins/newapi/      # newapi Shell plugin (metadata.yml + scripts/)
 ├── configs/             # Default config files
-└── docs/                # Architecture & design docs
+├── docs/                # MkDocs documentation site
+└── .github/workflows/   # CI + Release + Docs automation
 ```
 
 ## Configuration
@@ -183,9 +211,12 @@ newapi-tools --config /path/to/config.yml status
 
 ```bash
 make build    # Build binary → dist/newapi-tools
-make test     # Run all tests (83 tests across 7 packages)
+make test     # Run all tests (16 packages)
 make run      # Run locally
 make lint     # golangci-lint
+make vet      # go vet ./...
+make coverage # Generate test coverage report
+make docs     # Generate error code docs
 ```
 
 ### Running Tests
@@ -215,8 +246,12 @@ The bundled `plugins/newapi/` plugin provides 7 commands as shell scripts, with 
 
 | Version | Highlights |
 |---------|-----------|
+| V3.4.0  | Audit report fixes: cross-partition EXDEV fallback, `--json` now uses `encoding/json`, audit ring buffer, CI docs check |
+| V3.3.5  | Fix resolveAssetName semver comparison, doctor error code X001, audit double logging |
+| V3.3.4  | Security audit: path traversal fix, permission lockdown, shell injection prevention, race condition fixes |
+| V3.3.0  | Domain/MaxBackups config, `Check` struct refactor, auto-rollback |
 | V3.2.0  | Self-update (`update --check` / `--self`), Audit log (`audit list`), Multi-instance management (`instance add/list/switch/remove`), Auto-generated error code docs |
-| V3.1.0  | - |
+| V3.1.0  | i18n framework, structured error handling, audit logging, security checks, interactive install wizard |
 | V3.0.0  | mirror command (add/remove/list/apply/test/reset/builtin), 6 built-in CN mirrors, 83 tests |
 | V3.0-rc | 9 commands Go-native (incl. config + doctor --fix), 78 tests, Git v2/main split |
 | V3.0-a3 | install + status Go-native, newapi Shell plugin, 52 tests |

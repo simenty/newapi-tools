@@ -3,7 +3,7 @@ package core
 
 // Version information, set at build time via ldflags.
 var (
-	Version   = "v3.2.0-dev"
+	Version   = "v3.4.0"
 	GitCommit = "unknown"
 	BuildDate = "unknown"
 )
