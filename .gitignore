@@ -61,8 +61,10 @@ newapi-tools-windows-amd64.exe
 # MkDocs build output
 site/
 
-# WorkBuddy workspace notes
-.workbuddy/
+# WorkBuddy session memory (machine-specific, not versioned)
+.workbuddy/memory/
+.workbuddy/teams/
+.workbuddy/tasks/
 
 # Audit reports (temporary analysis documents)
 *审计报告*
