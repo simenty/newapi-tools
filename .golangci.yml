@@ -9,10 +9,31 @@ linters:
     - unused
     - gosimple
     - ineffassign
+    - gocyclo      # 新增：圈复杂度
+    - noctx        # 新增：HTTP context
+    - bodyclose    # 新增：响应 body 关闭
+    - gosec        # 新增：安全扫描
 
 linters-settings:
   errcheck:
     check-type-assertions: false
+
+  gocyclo:
+    min-complexity: 15   # doctor.go 当前约 30+，先设宽松阈值逐步收紧
+
+  noctx:
+    # noctx: HTTP 请求必须带 context，建议排除测试文件和生成的代码
+    skip-generated: true
+
+  gosec:
+    # gosec: 安全扫描
+    excludes:
+      - G104  # Errors unhandled.
+
+  bodyclose:
+    # bodyclose: 确保 HTTP 响应 body 被关闭
+    # 排除测试文件
+    skip-test-files: true
 
 issues:
   exclude-rules:
@@ -20,3 +41,5 @@ issues:
     - path: _test\.go
       linters:
         - errcheck
+        - noctx
+        - bodyclose
