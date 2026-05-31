@@ -17,7 +17,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.26'
 
       - name: Run Tests
         run: go test ./... -count=1 -timeout 120s
@@ -33,9 +33,7 @@ jobs:
 
       - name: Run GoReleaser
         run: |
-          GORELEASER_VERSION=v2.14.1
-          curl -sL "https://github.com/goreleaser/goreleaser/releases/download/$GORELEASER_VERSION/goreleaser_$(uname -s)_x86_64.tar.gz" -o goreleaser.tar.gz
-          tar -xzf goreleaser.tar.gz goreleaser
-          ./goreleaser release --clean
+          go install github.com/goreleaser/goreleaser/v2@latest
+          goreleaser release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
