@@ -155,3 +155,70 @@ log:
 		t.Errorf("expected default Docker.ComposeCmd 'docker compose', got '%s'", cfg.Docker.ComposeCmd)
 	}
 }
+
+func TestValidatePort(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.NewAPI.Port = 0
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for port 0")
+	}
+	cfg.NewAPI.Port = 70000
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for port 70000")
+	}
+}
+
+func TestValidateHome(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.NewAPI.Home = ""
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for empty home")
+	}
+}
+
+func TestValidateDockerImage(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.NewAPI.DockerImage = ""
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for empty docker_image")
+	}
+}
+
+func TestValidateBackupDir(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.NewAPI.BackupDir = ""
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for empty backup_dir")
+	}
+}
+
+func TestValidateComposeCmd(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Docker.ComposeCmd = ""
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for empty compose_cmd")
+	}
+}
+
+func TestValidateHealthTimeout(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.NewAPI.HealthTimeout = -1
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for negative health_timeout")
+	}
+}
+
+func TestValidateMaxBackups(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.NewAPI.MaxBackups = -1
+	if err := cfg.Validate(); err == nil {
+		t.Error("expected error for negative max_backups")
+	}
+}
+
+func TestValidConfigPasses(t *testing.T) {
+	cfg := DefaultConfig()
+	if err := cfg.Validate(); err != nil {
+		t.Errorf("default config should be valid, got: %v", err)
+	}
+}

@@ -37,19 +37,19 @@ func init() {
 
 // checkResult represents the outcome of a single diagnostic check.
 type checkResult struct {
-	Name    string
-	Status  string // "OK", "WARN", "FAIL", "SKIP"
-	Message string
-	Detail  *VerboseCheck // Detailed diagnostic info (--verbose)
+	Name    string         `json:"check"`
+	Status  string         `json:"status"` // "OK", "WARN", "FAIL", "SKIP"
+	Message string         `json:"message"`
+	Detail  *VerboseCheck  `json:"detail,omitempty"` // Detailed diagnostic info (--verbose)
 }
 
 // VerboseCheck contains detailed info for a check (--verbose mode).
 type VerboseCheck struct {
-	FilePath  string // File path involved in the check (if any)
-	Command   string // Command executed (if any)
-	Expected  string // Expected value
-	Actual    string // Actual value
-	RawOutput string // Raw command output (if any)
+	FilePath  string `json:"file,omitempty"`  // File path involved in the check (if any)
+	Command   string `json:"command,omitempty"`   // Command executed (if any)
+	Expected  string `json:"expected,omitempty"`  // Expected value
+	Actual    string `json:"actual,omitempty"`    // Actual value
+	RawOutput string `json:"raw,omitempty"` // Raw command output (if any)
 }
 
 // Check represents a single diagnostic check with its name, runner, fixer, and hint.
@@ -699,23 +699,17 @@ func printVerboseDetail(d *VerboseCheck, indent int) {
 }
 
 func printDoctorJSON(results []checkResult, verbose bool) {
-	type resultJSON struct {
-		Check   string       `json:"check"`
-		Status  string       `json:"status"`
-		Message string       `json:"message"`
-		Detail  *VerboseCheck `json:"detail,omitempty"`
-	}
-	items := make([]resultJSON, 0, len(results))
+	items := make([]checkResult, 0, len(results))
 	for _, r := range results {
-		item := resultJSON{
-			Check:   r.Name,
-			Status:  r.Status,
-			Message: r.Message,
-		}
 		if verbose && r.Detail != nil {
-			item.Detail = r.Detail
+			items = append(items, r)
+		} else {
+			items = append(items, checkResult{
+				Name:    r.Name,
+				Status:  r.Status,
+				Message: r.Message,
+			})
 		}
-		items = append(items, item)
 	}
 	data, _ := json.MarshalIndent(items, "", "  ")
 	fmt.Println(string(data))

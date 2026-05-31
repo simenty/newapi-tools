@@ -163,38 +163,80 @@ type ListOption struct {
 	Since   time.Time // Filter entries after this time (zero = no filter)
 }
 
-// List returns audit log entries matching the given options.
-// When opt.Last > 0, uses a ring buffer to avoid loading all entries into memory.
-func (r *AuditReader) List(opt ListOption) ([]AuditEntry, error) {
-	// Open log file
-	file, err := os.Open(r.path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return []AuditEntry{}, nil
+// rotatedFiles returns the paths of rotated log files, sorted from oldest to newest.
+// e.g. audit.log.5, audit.log.4, ..., audit.log.1
+func (r *AuditReader) rotatedFiles() []string {
+	var files []string
+	for i := 1; ; i++ {
+		rotated := fmt.Sprintf("%s.%d", r.path, i)
+		if _, err := os.Stat(rotated); err != nil {
+			break
 		}
-		return nil, fmt.Errorf("open audit log: %w", err)
+		files = append(files, rotated)
+	}
+	// Reverse so oldest file comes first: .1 is newest rotated, .N is oldest
+	for i, j := 0, len(files)-1; i < j; i, j = i+1, j-1 {
+		files[i], files[j] = files[j], files[i]
+	}
+	return files
+}
+
+// decodeEntries reads all AuditEntry values from a file.
+func decodeEntries(filePath string) ([]AuditEntry, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
 	}
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
+	var entries []AuditEntry
+	for decoder.More() {
+		var entry AuditEntry
+		if err := decoder.Decode(&entry); err != nil {
+			continue
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
 
-	// When opt.Last > 0, use a ring buffer to keep only the most recently matching N entries
+// List returns audit log entries matching the given options.
+// When opt.Last > 0, uses a ring buffer to avoid loading all entries into memory.
+// Reads from all rotated files (oldest first) and the main file to provide complete results.
+func (r *AuditReader) List(opt ListOption) ([]AuditEntry, error) {
+	// Gather all files to read (rotated files oldest-first, then main)
+	rotated := r.rotatedFiles()
+	allPaths := append(rotated, r.path)
+
+	// When opt.Last > 0, use a ring buffer across all files to keep only the N most recent matching entries
 	if opt.Last > 0 {
 		ring := make([]AuditEntry, 0, opt.Last)
-		for decoder.More() {
-			var entry AuditEntry
-			if err := decoder.Decode(&entry); err != nil {
-				continue
+		for _, filePath := range allPaths {
+			file, err := os.Open(filePath)
+			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				}
+				return nil, fmt.Errorf("open audit log: %w", err)
 			}
-			if !r.matchesFilter(entry, opt) {
-				continue
+
+			decoder := json.NewDecoder(file)
+			for decoder.More() {
+				var entry AuditEntry
+				if err := decoder.Decode(&entry); err != nil {
+					continue
+				}
+				if !r.matchesFilter(entry, opt) {
+					continue
+				}
+				if len(ring) < opt.Last {
+					ring = append(ring, entry)
+				} else {
+					ring = append(ring[1:], entry)
+				}
 			}
-			if len(ring) < opt.Last {
-				ring = append(ring, entry)
-			} else {
-				// Shift: drop oldest, append newest
-				ring = append(ring[1:], entry)
-			}
+			file.Close()
 		}
 		// Reverse to show newest first
 		for i, j := 0, len(ring)-1; i < j; i, j = i+1, j-1 {
@@ -203,14 +245,17 @@ func (r *AuditReader) List(opt ListOption) ([]AuditEntry, error) {
 		return ring, nil
 	}
 
-	// No Last limit: read all entries
+	// No Last limit: read all entries from all files
 	var entries []AuditEntry
-	for decoder.More() {
-		var entry AuditEntry
-		if err := decoder.Decode(&entry); err != nil {
-			continue
+	for _, filePath := range allPaths {
+		fileEntries, err := decodeEntries(filePath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, fmt.Errorf("open audit log: %w", err)
 		}
-		entries = append(entries, entry)
+		entries = append(entries, fileEntries...)
 	}
 
 	// Apply non-Last filters (Command, Since)

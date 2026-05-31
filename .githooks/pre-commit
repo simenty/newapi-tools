@@ -1,0 +1,11 @@
+#!/bin/sh
+# Pre-commit hook: auto-regenerate error code docs when apperr files change.
+# Install: make hooks  (or: git config core.hooksPath .githooks)
+
+CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep -c '^internal/apperr/' || true)
+
+if [ "$CHANGED" -gt 0 ]; then
+    echo "--- apperr files changed, regenerating docs/errors.md ---"
+    go run ./cmd/gendocs/
+    git add docs/errors.md
+fi

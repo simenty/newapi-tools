@@ -64,6 +64,11 @@ check: vet test
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## //'
 
+## hooks: Install git hooks (auto-regenerate docs on commit)
+hooks:
+	git config core.hooksPath .githooks
+	@echo "Git hooks installed from .githooks/"
+
 ## i18n-extract: Extract all i18n.T() keys from source code
 i18n-extract:
 	@echo "Extracting i18n keys from source..."
