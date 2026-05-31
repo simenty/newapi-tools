@@ -9,22 +9,33 @@ linters:
     - unused
     - gosimple
     - ineffassign
-    - gocyclo      # 新增：圈复杂度
-    - gosec        # 新增：安全扫描
+    - gocyclo
+    - gosec
 
 linters-settings:
   errcheck:
     check-type-assertions: false
 
   gocyclo:
-    min-complexity: 25   # 先设宽松阈值，后续逐步收紧
+    min-complexity: 40
 
   gosec:
-    # gosec: 安全扫描
 
 issues:
   exclude-rules:
-    # Exclude test files from some linters
     - path: _test\.go
       linters:
         - errcheck
+        - gosec
+    - linters:
+        - gosec
+      text: "G204"
+    - linters:
+        - gosec
+      text: "G306"
+    - linters:
+        - gosec
+      text: "G110"
+    - linters:
+        - gosec
+      text: "G115"

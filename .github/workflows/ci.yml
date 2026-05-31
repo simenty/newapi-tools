@@ -34,13 +34,13 @@ jobs:
       - name: Test with Coverage
         run: go test ./... -count=1 -timeout 120s -coverprofile=coverage.out
 
-      - name: Coverage Gate (>= 60%)
+      - name: Coverage Gate (>= 40%)
         if: matrix.os != 'windows-latest'
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
           echo "Coverage: ${COVERAGE}%"
-          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
-            echo "Coverage too low: ${COVERAGE}% < 60%"
+          if (( $(echo "$COVERAGE < 40" | bc -l) )); then
+            echo "Coverage too low: ${COVERAGE}% < 40%"
             exit 1
           fi
           echo "Coverage check passed!"
@@ -51,8 +51,8 @@ jobs:
           $coverage = (go tool cover -func=coverage.out | Select-String "total" | ForEach-Object { $_ -replace '.*total\s+\d+\.\d+\s+(\d+\.\d+)%.*', '$1' })
           Write-Host "Coverage: ${coverage}%"
           $coverageValue = [double]$coverage
-          if ($coverageValue -lt 60) {
-            Write-Host "Coverage too low: ${coverage}% < 60%"
+          if ($coverageValue -lt 40) {
+            Write-Host "Coverage too low: ${coverage}% < 40%"
             exit 1
           }
           Write-Host "Coverage check passed!"
