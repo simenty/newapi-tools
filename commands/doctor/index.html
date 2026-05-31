@@ -724,6 +724,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#-verbose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --verbose 输出内容
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -970,6 +981,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#-verbose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        --verbose 输出内容
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1031,6 +1053,11 @@
 <td>false</td>
 <td>自动修复可修复的问题</td>
 </tr>
+<tr>
+<td><code>--verbose</code></td>
+<td>false</td>
+<td>显示详细的诊断信息（包括文件路径、命令输出等）</td>
+</tr>
 </tbody>
 </table>
 <h2 id="_3">检查项</h2>
@@ -1090,7 +1117,20 @@ newapi-tools<span class="w"> </span>doctor
 
 <span class="c1"># 检查并自动修复</span>
 newapi-tools<span class="w"> </span>doctor<span class="w"> </span>--fix
+
+<span class="c1"># 显示详细的诊断信息</span>
+newapi-tools<span class="w"> </span>doctor<span class="w"> </span>--verbose
+
+<span class="c1"># 显示详细信息并尝试自动修复</span>
+newapi-tools<span class="w"> </span>doctor<span class="w"> </span>--verbose<span class="w"> </span>--fix
 </code></pre></div>
+<h2 id="-verbose">--verbose 输出内容</h2>
+<p>使用 <code>--verbose</code> 时会显示：
+- 每个检查的详细状态
+- 检查涉及的文件路径
+- 执行的命令
+- 期望的值 vs. 实际值
+- 原始命令输出</p>
 <h2 id="_5">输出示例</h2>
 <div class="highlight"><pre><span></span><code>[PASS] Docker daemon is running
 [PASS] Docker Compose is available
@@ -1106,6 +1146,7 @@ Run &#39;newapi-tools doctor --fix&#39; to attempt auto-repair.
 <ul>
 <li>创建缺失的安装目录</li>
 <li>启动未运行的容器（执行 <code>docker compose up -d</code>）</li>
+<li>修复配置文件权限（0600）</li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">提示</p>

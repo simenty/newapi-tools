@@ -755,6 +755,17 @@
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
+        说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
         示例
       
     </span>
@@ -962,6 +973,17 @@
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
+        说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
         示例
       
     </span>
@@ -1051,6 +1073,21 @@
 <td>备份目录</td>
 </tr>
 <tr>
+<td><code>newapi.domain</code></td>
+<td><code>""</code></td>
+<td>new-api 自定义域名（可选）</td>
+</tr>
+<tr>
+<td><code>newapi.health_timeout</code></td>
+<td><code>120</code></td>
+<td>健康检查超时时间（秒）</td>
+</tr>
+<tr>
+<td><code>newapi.max_backups</code></td>
+<td><code>10</code></td>
+<td>最大保留备份数量</td>
+</tr>
+<tr>
 <td><code>docker.compose_cmd</code></td>
 <td><code>docker compose</code></td>
 <td>Docker Compose 命令</td>
@@ -1065,14 +1102,34 @@
 <td><code>text</code></td>
 <td>日志格式（text/json）</td>
 </tr>
+<tr>
+<td><code>instance.active</code></td>
+<td><code>""</code></td>
+<td>当前活跃实例的名称</td>
+</tr>
 </tbody>
 </table>
-<h2 id="_5">示例</h2>
+<h2 id="_5">说明</h2>
+<ul>
+<li>当存在活跃实例时，<code>config</code> 命令会自动使用该实例的配置</li>
+<li><code>config set</code> 会同时更新配置文件和活跃实例的配置（如果存在）</li>
+<li>使用 <code>--instance &lt;name&gt;</code> 标志可以在单个命令上临时切换到其他实例</li>
+</ul>
+<h2 id="_6">示例</h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># 查看当前配置</span>
 newapi-tools<span class="w"> </span>config
 
 <span class="c1"># 修改端口</span>
 newapi-tools<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>newapi.port<span class="w"> </span><span class="m">8080</span>
+
+<span class="c1"># 设置自定义域名</span>
+newapi-tools<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>newapi.domain<span class="w"> </span>newapi.example.com
+
+<span class="c1"># 修改健康检查超时</span>
+newapi-tools<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>newapi.health_timeout<span class="w"> </span><span class="m">300</span>
+
+<span class="c1"># 设置最大保留备份数量</span>
+newapi-tools<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>newapi.max_backups<span class="w"> </span><span class="m">20</span>
 
 <span class="c1"># 修改安装目录</span>
 newapi-tools<span class="w"> </span>config<span class="w"> </span><span class="nb">set</span><span class="w"> </span>newapi.home<span class="w"> </span>/data/newapi
