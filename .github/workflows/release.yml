@@ -32,8 +32,8 @@ jobs:
           fail_ci_if_error: false
 
       - name: Run GoReleaser
-        run: |
-          go install github.com/goreleaser/goreleaser/v2@latest
-          goreleaser release --clean
+        uses: docker://goreleaser/goreleaser:latest
+        with:
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
