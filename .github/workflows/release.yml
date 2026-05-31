@@ -65,64 +65,35 @@ jobs:
       - name: Generate Release Notes
         run: |
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          NOTES="## 更新说明\n\n"
+          echo "## 更新说明" > release_notes.md
           if [ -n "$PREV_TAG" ]; then
-            NOTES="${NOTES}基于上一版本 $PREV_TAG 的变更：\n\n"
-            
-            FEATURES=$(git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ feat" || true)
-            FIXES=$(git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ fix" || true)
-            REFACTORS=$(git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ (refactor|chore|docs|style|test)" || true)
-            CI_CHANGES=$(git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ ci" || true)
-            OTHER=$(git log $PREV_TAG..HEAD --oneline --no-decorate | grep -v -E "^[0-9a-f]+ (feat|fix|refactor|chore|docs|style|test|ci)" || true)
-            
-            if [ -n "$FEATURES" ]; then
-              NOTES="${NOTES}### 🚀 新功能\n"
-              echo "$FEATURES" | while read line; do
-                MSG=$(echo "$line" | sed 's/^[0-9a-f]* //')
-                NOTES="${NOTES}- ${MSG}\n"
-              done
-              NOTES="${NOTES}\n"
-            fi
-            
-            if [ -n "$FIXES" ]; then
-              NOTES="${NOTES}### 🐛 Bug 修复\n"
-              echo "$FIXES" | while read line; do
-                MSG=$(echo "$line" | sed 's/^[0-9a-f]* //')
-                NOTES="${NOTES}- ${MSG}\n"
-              done
-              NOTES="${NOTES}\n"
-            fi
-            
-            if [ -n "$REFACTORS" ]; then
-              NOTES="${NOTES}### 🔧 优化与重构\n"
-              echo "$REFACTORS" | while read line; do
-                MSG=$(echo "$line" | sed 's/^[0-9a-f]* //')
-                NOTES="${NOTES}- ${MSG}\n"
-              done
-              NOTES="${NOTES}\n"
-            fi
-            
-            if [ -n "$CI_CHANGES" ]; then
-              NOTES="${NOTES}### ⚙️ CI/CD 改进\n"
-              echo "$CI_CHANGES" | while read line; do
-                MSG=$(echo "$line" | sed 's/^[0-9a-f]* //')
-                NOTES="${NOTES}- ${MSG}\n"
-              done
-              NOTES="${NOTES}\n"
-            fi
-            
-            if [ -n "$OTHER" ]; then
-              NOTES="${NOTES}### 📝 其他变更\n"
-              echo "$OTHER" | while read line; do
-                MSG=$(echo "$line" | sed 's/^[0-9a-f]* //')
-                NOTES="${NOTES}- ${MSG}\n"
-              done
-              NOTES="${NOTES}\n"
-            fi
+            echo "" >> release_notes.md
+            echo "基于上一版本 $PREV_TAG 的变更：" >> release_notes.md
+            echo "" >> release_notes.md
+
+            echo "### 🚀 新功能" >> release_notes.md
+            git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ feat" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
+            echo "" >> release_notes.md
+
+            echo "### 🐛 Bug 修复" >> release_notes.md
+            git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ fix" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
+            echo "" >> release_notes.md
+
+            echo "### 🔧 优化与重构" >> release_notes.md
+            git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ (refactor|chore|docs|style|test)" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
+            echo "" >> release_notes.md
+
+            echo "### ⚙️ CI/CD 改进" >> release_notes.md
+            git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ ci" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
+            echo "" >> release_notes.md
+
+            echo "### � 其他变更" >> release_notes.md
+            git log $PREV_TAG..HEAD --oneline --no-decorate | grep -v -E "^[0-9a-f]+ (feat|fix|refactor|chore|docs|style|test|ci)" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
+            echo "" >> release_notes.md
           fi
-          
-          NOTES="${NOTES}---\n**完整变更记录**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${{ github.ref_name }}\n"
-          echo -e "$NOTES" > release_notes.md
+
+          echo "---" >> release_notes.md
+          echo "**完整变更记录**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${{ github.ref_name }}" >> release_notes.md
           cat release_notes.md
 
       - name: Create Release
