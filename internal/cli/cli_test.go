@@ -423,8 +423,8 @@ func TestCheckEnvFileExists(t *testing.T) {
 func TestPrintDoctorJSON(t *testing.T) {
 	// Just verify it doesn't panic
 	results := []checkResult{
-		{"docker binary", "OK", "/usr/bin/docker"},
-		{"docker daemon", "FAIL", "not running"},
+		{"docker binary", "OK", "/usr/bin/docker", nil},
+		{"docker daemon", "FAIL", "not running", nil},
 	}
 	// Capture to /dev/null equivalent — just ensure no panic
 	defer func() {
@@ -436,7 +436,7 @@ func TestPrintDoctorJSON(t *testing.T) {
 	old := os.Stdout
 	devNull, _ := os.Open(os.DevNull)
 	os.Stdout = devNull
-	printDoctorJSON(results)
+	printDoctorJSON(results, false)
 	os.Stdout = old
 	devNull.Close()
 }
@@ -560,7 +560,7 @@ func TestRunAutoFixHomeDir(t *testing.T) {
 
 	// Home dir doesn't exist → should be created
 	results := []checkResult{
-		{"home directory", "FAIL", "does not exist"},
+		{"home-dir", "FAIL", "does not exist", nil},
 	}
 
 	// Redirect stdout
@@ -586,11 +586,11 @@ func TestRunAutoFixHintOnly(t *testing.T) {
 
 	// These should only print hints, not count as fixes
 	results := []checkResult{
-		{"docker binary", "FAIL", "not found"},
-		{"docker-compose.yml", "FAIL", "not found"},
-		{".env file", "WARN", "not found"},
-		{"HTTP health", "WARN", "not reachable"},
-		{"disk space", "SKIP", "n/a"},
+		{"docker binary", "FAIL", "not found", nil},
+		{"docker-compose.yml", "FAIL", "not found", nil},
+		{".env file", "WARN", "not found", nil},
+		{"HTTP health", "WARN", "not reachable", nil},
+		{"disk space", "SKIP", "n/a", nil},
 	}
 
 	old := os.Stdout

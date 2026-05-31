@@ -88,5 +88,9 @@ func Wrap(code, suggestion string, cause error) *AppError {
 // Returns empty string if no suggestion is registered.
 func GetSuggestion(code string) string {
 	key := fmt.Sprintf("err.suggest.%s", code)
-	return i18n.T(key)
+	result := i18n.T(key)
+	if result == key {
+		return ""
+	}
+	return result
 }

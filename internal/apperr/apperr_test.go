@@ -5,7 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/simenty/newapi-tools/internal/i18n"
 )
+
+func TestMain(m *testing.M) {
+	if err := i18n.Init("zh-CN"); err != nil {
+		fmt.Println("Failed to initialize i18n:", err)
+		return
+	}
+	m.Run()
+}
 
 func TestNew(t *testing.T) {
 	cause := errors.New("underlying error")
@@ -37,8 +47,8 @@ func TestNewAutoSuggestion(t *testing.T) {
 	if appErr.Suggestion == "" {
 		t.Error("expected suggestion from map, got empty string")
 	}
-	if appErr.Suggestion != suggestions[CodeDockerNotFound] {
-		t.Errorf("expected %q, got %q", suggestions[CodeDockerNotFound], appErr.Suggestion)
+	if appErr.Suggestion != GetSuggestion(CodeDockerNotFound) {
+		t.Errorf("expected %q, got %q", GetSuggestion(CodeDockerNotFound), appErr.Suggestion)
 	}
 }
 
@@ -110,10 +120,19 @@ func TestUnwrapNil(t *testing.T) {
 }
 
 func TestGetSuggestion(t *testing.T) {
-	for code, expectedSuggestion := range suggestions {
-		got := GetSuggestion(code)
-		if got != expectedSuggestion {
-			t.Errorf("GetSuggestion(%q) = %q, want %q", code, got, expectedSuggestion)
+	testCases := []struct {
+		code     string
+		expected string
+	}{
+		{CodeDockerNotFound, GetSuggestion(CodeDockerNotFound)},
+		{CodeDockerDaemonDown, GetSuggestion(CodeDockerDaemonDown)},
+		{CodeDockerGroupMiss, GetSuggestion(CodeDockerGroupMiss)},
+		{CodeConfigLoad, GetSuggestion(CodeConfigLoad)},
+	}
+	for _, tc := range testCases {
+		got := GetSuggestion(tc.code)
+		if got != tc.expected {
+			t.Errorf("GetSuggestion(%q) = %q, want %q", tc.code, got, tc.expected)
 		}
 	}
 }
