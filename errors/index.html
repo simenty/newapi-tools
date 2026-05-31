@@ -23,7 +23,7 @@
     
     
       
-        <title>Error Code Reference - NewAPI Tools</title>
+        <title>Errors - NewAPI Tools</title>
       
     
     
@@ -73,11 +73,6 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
-        
-        <a href="#error-code-reference" class="md-skip">
-          跳转至
-        </a>
-      
     </div>
     <div data-md-component="announce">
       
@@ -108,7 +103,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Error Code Reference
+              Errors
             
           </span>
         </div>
@@ -792,8 +787,6 @@
   
   
   
-    
-  
   
 </nav>
                   </div>
@@ -813,8 +806,10 @@
   
 
 
-<h1 id="error-code-reference">Error Code Reference</h1>
-<p>This document lists all error codes used in newapi-tools.</p>
+  <h1>Errors</h1>
+
+<p>Generated docs/errors.md successfully
+lists all error codes used in newapi-tools.</p>
 <table>
 <thead>
 <tr>
@@ -824,88 +819,80 @@
 </thead>
 <tbody>
 <tr>
-<td><code>D001</code></td>
-<td>Docker not installed</td>
-</tr>
-<tr>
-<td><code>D002</code></td>
-<td>Docker daemon not running</td>
-</tr>
-<tr>
-<td><code>D003</code></td>
-<td>Docker Compose not available</td>
-</tr>
-<tr>
-<td><code>I001</code></td>
-<td>Installation directory already exists</td>
-</tr>
-<tr>
-<td><code>I002</code></td>
-<td>Port already in use</td>
-</tr>
-<tr>
-<td><code>I003</code></td>
-<td>Instance name already exists</td>
-</tr>
-<tr>
-<td><code>I004</code></td>
-<td>Instance not found</td>
-</tr>
-<tr>
-<td><code>I005</code></td>
-<td>Cannot remove active instance</td>
-</tr>
-<tr>
-<td><code>C001</code></td>
-<td>Invalid config value</td>
-</tr>
-<tr>
-<td><code>C002</code></td>
-<td>Config file not writable</td>
-</tr>
-<tr>
-<td><code>M001</code></td>
-<td>Invalid mirror URL</td>
-</tr>
-<tr>
-<td><code>M002</code></td>
-<td>Mirror not reachable</td>
-</tr>
-<tr>
-<td><code>M003</code></td>
-<td>Mirror already added</td>
-</tr>
-<tr>
 <td><code>B001</code></td>
-<td>Backup directory not writable</td>
+<td>Backup failed</td>
 </tr>
 <tr>
 <td><code>B002</code></td>
-<td>No backups found</td>
+<td>Restore failed</td>
+</tr>
+<tr>
+<td><code>C001</code></td>
+<td>Configuration load failed</td>
+</tr>
+<tr>
+<td><code>C002</code></td>
+<td>Config file permissions too wide</td>
+</tr>
+<tr>
+<td><code>D001</code></td>
+<td>Docker is not installed</td>
+</tr>
+<tr>
+<td><code>D002</code></td>
+<td>Docker daemon is not running</td>
+</tr>
+<tr>
+<td><code>D003</code></td>
+<td>Current user not in docker group</td>
+</tr>
+<tr>
+<td><code>I001</code></td>
+<td>Installation failed</td>
+</tr>
+<tr>
+<td><code>I002</code></td>
+<td>Installation timeout</td>
+</tr>
+<tr>
+<td><code>I003</code></td>
+<td>实例名已存在</td>
+</tr>
+<tr>
+<td><code>I004</code></td>
+<td>实例不存在</td>
+</tr>
+<tr>
+<td><code>I005</code></td>
+<td>实例为当前活跃实例，无法删除</td>
+</tr>
+<tr>
+<td><code>M001</code></td>
+<td>Mirror apply failed</td>
 </tr>
 <tr>
 <td><code>P001</code></td>
-<td>Plugin not found</td>
-</tr>
-<tr>
-<td><code>P002</code></td>
-<td>Plugin invalid</td>
-</tr>
-<tr>
-<td><code>U001</code></td>
-<td>Update check failed</td>
-</tr>
-<tr>
-<td><code>U002</code></td>
-<td>Self-update failed</td>
-</tr>
-<tr>
-<td><code>U003</code></td>
-<td>SHA256 verification failed</td>
+<td>Plugin initialization failed</td>
 </tr>
 <tr>
 <td><code>S001</code></td>
-<td>System check failed</td>
+<td>Unsupported architecture</td>
+</tr>
+<tr>
+<td><code>U001</code></td>
+<td>版本检查失败</td>
+</tr>
+<tr>
+<td><code>U002</code></td>
+<td>自更新失败</td>
+</tr>
+<tr>
+<td><code>U003</code></td>
+<td>SHA256 校验失败</td>
+</tr>
+<tr>
+<td><code>X001</code></td>
+<td>诊断检查失败</td>
 </tr>
 </tbody>
 </table>
