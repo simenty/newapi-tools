@@ -1,0 +1,1667 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Docker management platform for new-api">
+      
+      
+      
+        <link rel="canonical" href="https://simenty.github.io/newapi-tools/handoff/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>项目交接手册 - NewAPI Tools</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#_1" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="NewAPI Tools" class="md-header__button md-logo" aria-label="NewAPI Tools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NewAPI Tools
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              项目交接手册
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到深色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切换到深色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切换到浅色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切换到浅色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/simenty/newapi-tools" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    simenty/newapi-tools
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="标签" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首页
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guide/getting-started/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  快速开始
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../commands/install/" class="md-tabs__link">
+          
+  
+  
+  命令参考
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guide/mirror/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  镜像加速
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../guide/faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  常见问题
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="NewAPI Tools" class="md-nav__button md-logo" aria-label="NewAPI Tools" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    NewAPI Tools
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/simenty/newapi-tools" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    simenty/newapi-tools
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    命令参考
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    命令参考
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    install
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/status/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    status
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/backup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    backup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/update/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    update
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/doctor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    doctor
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    config
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/mirror/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    mirror
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../commands/version/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    version
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/mirror/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    镜像加速
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、项目概述
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="一、项目概述">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心定位
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、目录说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、依赖与构建
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三、依赖与构建">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        直接依赖（3 个）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#makefile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        开发命令（Makefile）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        交叉编译
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cicd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、CI/CD 流水线
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、CI/CD 流水线">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cigithubworkflowsciyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI（.github/workflows/ci.yml）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#githubworkflowsreleaseyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        发布（.github/workflows/release.yml）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#githubworkflowsdocsyml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        文档（.github/workflows/docs.yml）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、架构设计要点
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、架构设计要点">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        分层架构
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键数据流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#internalapperr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        错误码体系（internal/apperr）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        多实例隔离
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v340" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、当前版本状态（v3.4.0）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、当前版本状态（v3.4.0）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        已完成功能
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        未完成/可改进
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#p0p1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        已知问题（无未修复 P0/P1）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、开发规范
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="七、开发规范">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        代码风格
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        提交规范
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试要求
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trae" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、TRAE 接手指引
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="八、TRAE 接手指引">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 首次打开
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 先跑通环境
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 推荐工作流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 每个任务的最小单元
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        九、联系方式
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="_1">项目交接手册</h1>
+<blockquote>
+<p><strong>项目</strong>：NewAPI Tools (<code>github.com/simenty/newapi-tools</code>)<br />
+<strong>版本</strong>：v3.4.0<br />
+<strong>交接时间</strong>：2026-06-01<br />
+<strong>接手工具</strong>：TRAE AI IDE  </p>
+</blockquote>
+<hr />
+<h2 id="_2">一、项目概述</h2>
+<p>面向零基础用户的 <strong>new-api Docker 管理 CLI 工具</strong>。Go 重写（V3），替代 Shell V2 版本。</p>
+<ul>
+<li><strong>GitHub</strong>：https://github.com/simenty/newapi-tools</li>
+<li><strong>文档站</strong>：https://simenty.github.io/newapi-tools/</li>
+<li><strong>Go 版本</strong>：1.23，模块路径 <code>github.com/simenty/newapi-tools</code></li>
+<li><strong>许可证</strong>：MIT</li>
+</ul>
+<h3 id="_3">核心定位</h3>
+<p>一句话：<strong>帮用户用 Docker Compose 一键部署/管理 new-api，不用写 docker 命令。</strong></p>
+<hr />
+<h2 id="_4">二、目录说明</h2>
+<div class="highlight"><pre><span></span><code>newapi-tools/
+├── cmd/
+│   ├── newapi/main.go           # 入口
+│   └── gendocs/main.go          # 错误码文档生成器（独立工具）
+├── internal/
+│   ├── apperr/                  # 结构化错误码（18 个 + suggestions）
+│   ├── audit/                   # 审计日志：JSON Lines 写入 + 轮转 + 查询（环形缓冲）
+│   ├── cli/                     # Cobra 命令（12 个命令）
+│   │   ├── install.go           # 安装（7步交互向导 + 自动注册实例）
+│   │   ├── status.go            # 状态（ls别名 + --instance + --watch）
+│   │   ├── backup.go            # 备份 + MySQL dump
+│   │   ├── restore.go           # 恢复（路径注入防护）
+│   │   ├── update.go            # 容器更新 + CLI 自更新
+│   │   ├── doctor.go            # 诊断（12项 + --fix + --verbose）
+│   │   ├── config.go            # 配置（show/set/init/chmod）
+│   │   ├── mirror.go            # 镜像管理（并发测速 + 表格输出）
+│   │   ├── instance.go          # 多实例管理
+│   │   ├── audit_list.go        # 审计日志查询
+│   │   ├── version.go           # 版本信息
+│   │   └── root.go              # 根命令 + 审计日志记录
+│   ├── core/                    # 配置加载（Viper） + 版本常量
+│   ├── docker/                  # Docker CLI 封装 + Compose + 镜像管理
+│   ├── i18n/                    # 国际化（zh-CN / en）
+│   ├── instance/                # 多实例元数据存储（instances.json CRUD）
+│   ├── osutil/                  # OS 适配（Debian/RHEL/Fedora/Arch）
+│   ├── plugin/                  # 插件系统（Shell / Go 插件）
+│   ├── registry/                # 命令注册表
+│   ├── security/                # 安全检查 + chmod 修复
+│   ├── selfupdate/              # CLI 自更新（GitHub API + SHA256 + 原子替换）
+│   └── ui/                      # 终端输出（Table / PrintStep / Logger）
+├── plugins/newapi/              # 内置 Shell 插件（7 个 stub 脚本）
+├── configs/                     # 默认配置
+├── docs/                        # MkDocs 文档站源文件
+├── .github/workflows/
+│   ├── ci.yml                   # 三平台测试（vet → test → coverage ≥30% → build）
+│   ├── release.yml              # tag 发布（5 平台构建 → 自动 release notes）
+│   └── docs.yml                 # MkDocs 自动部署 GitHub Pages
+├── Makefile                     # 构建/测试/文档命令
+├── .golangci.yml                # golangci-lint 配置
+├── .gitignore                   # 忽略规则
+├── go.mod / go.sum              # Go 依赖
+├── README.md                    # 中文 README
+└── README_EN.md                 # 英文 README
+</code></pre></div>
+<hr />
+<h2 id="_5">三、依赖与构建</h2>
+<h3 id="3">直接依赖（3 个）</h3>
+<table>
+<thead>
+<tr>
+<th>包</th>
+<th>版本</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spf13/cobra</code></td>
+<td>v1.8.1</td>
+<td>CLI 框架</td>
+</tr>
+<tr>
+<td><code>spf13/viper</code></td>
+<td>v1.19.0</td>
+<td>配置管理</td>
+</tr>
+<tr>
+<td><code>gopkg.in/yaml.v3</code></td>
+<td>v3.0.1</td>
+<td>YAML 序列化</td>
+</tr>
+</tbody>
+</table>
+<p>间接依赖 15 个（cobra 和 viper 的传递依赖），<strong>无 Docker SDK</strong>——所有 Docker 操作通过 <code>exec.Command</code> 调用 CLI。</p>
+<h3 id="makefile">开发命令（Makefile）</h3>
+<div class="highlight"><pre><span></span><code>make<span class="w"> </span>build<span class="w">    </span><span class="c1"># 编译到 dist/newapi-tools</span>
+make<span class="w"> </span><span class="nb">test</span><span class="w">     </span><span class="c1"># go test ./...</span>
+make<span class="w"> </span>vet<span class="w">      </span><span class="c1"># go vet ./...</span>
+make<span class="w"> </span>lint<span class="w">     </span><span class="c1"># golangci-lint run ./...</span>
+make<span class="w"> </span>coverage<span class="w"> </span><span class="c1"># 生成 coverage.html</span>
+make<span class="w"> </span>docs<span class="w">     </span><span class="c1"># go run cmd/gendocs/main.go → docs/errors.md</span>
+make<span class="w"> </span>check<span class="w">    </span><span class="c1"># vet + test</span>
+make<span class="w"> </span>clean<span class="w">    </span><span class="c1"># 清理 dist/</span>
+make<span class="w"> </span>run<span class="w">      </span><span class="c1"># go run ./cmd/newapi/</span>
+</code></pre></div>
+<h3 id="_6">测试</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 全量测试</span>
+go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...
+
+<span class="c1"># 指定包</span>
+go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/cli/<span class="w"> </span>-v
+go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./internal/docker/...
+
+<span class="c1"># 不缓存</span>
+go<span class="w"> </span><span class="nb">test</span><span class="w"> </span>./...<span class="w"> </span>-count<span class="o">=</span><span class="m">1</span>
+</code></pre></div>
+<p>当前 <strong>16 个包全部 PASS</strong>，无失败测试。</p>
+<h3 id="_7">交叉编译</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Linux amd64</span>
+<span class="nv">GOOS</span><span class="o">=</span>linux<span class="w"> </span><span class="nv">GOARCH</span><span class="o">=</span>amd64<span class="w"> </span><span class="nv">CGO_ENABLED</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-ldflags<span class="o">=</span><span class="s2">&quot;-s -w -X github.com/simenty/newapi-tools/internal/core.Version=v3.4.0&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span>dist/newapi-tools-linux-amd64<span class="w"> </span>./cmd/newapi/
+
+<span class="c1"># Windows</span>
+<span class="nv">GOOS</span><span class="o">=</span>windows<span class="w"> </span><span class="nv">GOARCH</span><span class="o">=</span>amd64<span class="w"> </span>go<span class="w"> </span>build<span class="w"> </span>...
+</code></pre></div>
+<hr />
+<h2 id="cicd">四、CI/CD 流水线</h2>
+<h3 id="cigithubworkflowsciyml">CI（<code>.github/workflows/ci.yml</code>）</h3>
+<table>
+<thead>
+<tr>
+<th>触发</th>
+<th>矩阵</th>
+<th>步骤</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>push/PR → main</td>
+<td>ubuntu/macos/windows × go 1.23</td>
+<td>vet → test → coverage gate (≥30%) → build</td>
+</tr>
+<tr>
+<td></td>
+<td>额外 lint job</td>
+<td>ubuntu-latest + golangci-lint</td>
+</tr>
+<tr>
+<td></td>
+<td>额外 docs-check job</td>
+<td>运行 gendocs 并检查 docs/errors.md 变更</td>
+</tr>
+</tbody>
+</table>
+<h3 id="githubworkflowsreleaseyml">发布（<code>.github/workflows/release.yml</code>）</h3>
+<table>
+<thead>
+<tr>
+<th>触发</th>
+<th>流程</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>push tag <code>v*</code></td>
+<td>验证 tag 格式 → test → 5 平台构建（linux amd64/arm64, darwin amd64/arm64, windows amd64）→ tar.gz/zip → checksums → 自动 release notes → gh release create</td>
+</tr>
+</tbody>
+</table>
+<p><strong>幂等设计</strong>：先 delete 再 create，支持重跑。</p>
+<h3 id="githubworkflowsdocsyml">文档（<code>.github/workflows/docs.yml</code>）</h3>
+<p>push main（docs/ 或 mkdocs.yml 变更）→ MkDocs gh-deploy → GitHub Pages。</p>
+<p><strong>发布流程</strong>：
+<div class="highlight"><pre><span></span><code><span class="c1"># 1. 更新版本号</span>
+<span class="c1"># 编辑 internal/core/version.go</span>
+
+<span class="c1"># 2. 提交代码</span>
+git<span class="w"> </span>add<span class="w"> </span>-A
+git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;feat: xxx&quot;</span>
+
+<span class="c1"># 3. 打 tag 发布</span>
+git<span class="w"> </span>tag<span class="w"> </span>v3.4.0
+git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>v3.4.0
+<span class="c1"># → GitHub Actions 自动构建 Release</span>
+</code></pre></div></p>
+<hr />
+<h2 id="_8">五、架构设计要点</h2>
+<h3 id="_9">分层架构</h3>
+<div class="highlight"><pre><span></span><code>cmd/ → 入口
+internal/cli/ → 命令层（参数解析 + UI 输出）
+internal/ 其他包 → 业务逻辑层
+</code></pre></div>
+<p>设计原则：
+- <strong>命令层不做业务逻辑</strong>，只做参数解析和 UI 输出
+- <strong>internal 包通过函数/结构体调用</strong>，不用接口抽象（项目规模小，保持简单）
+- <strong>新增包不改已有包公开 API</strong>，仅扩展</p>
+<h3 id="_10">关键数据流</h3>
+<div class="highlight"><pre><span></span><code>用户输入 → cobra.RunE → 参数解析 → 业务函数 → 结构化错误(apperr) → UI输出
+                                  ↓
+                              audit.Log() ← 审计日志（自动记录每个命令）
+</code></pre></div>
+<h3 id="internalapperr">错误码体系（<code>internal/apperr</code>）</h3>
+<div class="highlight"><pre><span></span><code>规范：[A][NNN]
+A = 类别: D=Docker, C=Config, I=Install/Instance, S=System, M=Mirror, B=Backup, P=Plugin, U=Update, X=Doctor
+
+使用方式：
+- apperr.New(code, msg, suggestion, cause) → 创建新错误
+- apperr.Wrap(code, suggestion, cause) → 包装已有错误
+- apperr.GetSuggestion(code) → 获取修复建议
+</code></pre></div>
+<h3 id="_11">多实例隔离</h3>
+<ul>
+<li>实例元数据：<code>~/.config/newapi-tools/instances.json</code></li>
+<li>Compose 隔离：<code>COMPOSE_PROJECT_NAME=newapi-&lt;name&gt;</code></li>
+<li>实例目录：<code>/opt/newapi-&lt;name&gt;</code>（默认）</li>
+</ul>
+<hr />
+<h2 id="v340">六、当前版本状态（v3.4.0）</h2>
+<h3 id="_12">已完成功能</h3>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>命令</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>安装部署</td>
+<td><code>install</code></td>
+<td>✅ 7步交互向导 + 自动注册实例</td>
+</tr>
+<tr>
+<td>状态查看</td>
+<td><code>status</code> / <code>ls</code></td>
+<td>✅ 表格/JSON双输出 + --watch + --instance</td>
+</tr>
+<tr>
+<td>备份恢复</td>
+<td><code>backup</code> / <code>restore</code></td>
+<td>✅ tar.gz + MySQL dump + 路径注入防护</td>
+</tr>
+<tr>
+<td>容器更新</td>
+<td><code>update</code></td>
+<td>✅ Docker image + 自更新(--self) + 版本检查(--check)</td>
+</tr>
+<tr>
+<td>故障诊断</td>
+<td><code>doctor</code></td>
+<td>✅ 12项检查 + --fix + --verbose</td>
+</tr>
+<tr>
+<td>配置管理</td>
+<td><code>config</code></td>
+<td>✅ show/set/init/chmod</td>
+</tr>
+<tr>
+<td>镜像加速</td>
+<td><code>mirror</code></td>
+<td>✅ 6内置源 + 并发测速 + 自动选择</td>
+</tr>
+<tr>
+<td>多实例管理</td>
+<td><code>instance</code></td>
+<td>✅ add/list/switch/remove</td>
+</tr>
+<tr>
+<td>审计日志</td>
+<td><code>audit</code></td>
+<td>✅ JSON Lines + 轮转 + 查询过滤</td>
+</tr>
+<tr>
+<td>CLI自更新</td>
+<td><code>update --self</code></td>
+<td>✅ GitHub API + SHA256 + 原子替换 + 跨分区回滚</td>
+</tr>
+<tr>
+<td>国际化</td>
+<td>全局</td>
+<td>✅ zh-CN / en</td>
+</tr>
+<tr>
+<td>CI/CD</td>
+<td>GitHub Actions</td>
+<td>✅ 三平台测试 + 自动发布 + 文档部署</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_13">未完成/可改进</h3>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>优先级</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Config <code>Validate()</code></td>
+<td>P3</td>
+<td>无前置校验，Port=0 或 MaxBackups=-99 可静默传入</td>
+</tr>
+<tr>
+<td><code>doctor --verbose --json</code> 序列化</td>
+<td>P3</td>
+<td>已改用 json.Marshal，但 printDoctorJSON 整体可进一步统一</td>
+</tr>
+<tr>
+<td>Docker SDK 集成</td>
+<td>P4</td>
+<td>当前 exec.Command 调 CLI 够用，长远可考虑</td>
+</tr>
+<tr>
+<td><code>audit list</code> 环形缓冲对齐 rotated 文件</td>
+<td>P3</td>
+<td>当前 ring buffer 只读主文件，未合并 .1/.2 等轮转文件</td>
+</tr>
+<tr>
+<td>新增错误码时自动触发 gendocs</td>
+<td>P3</td>
+<td>当前 gendocs 需手动执行 <code>make docs</code>，可考虑 pre-commit hook</td>
+</tr>
+</tbody>
+</table>
+<h3 id="p0p1">已知问题（无未修复 P0/P1）</h3>
+<p>v3.3.4 + v3.3.5 的安全审计和代码审计已修复全部 P0/P1 问题。当前无已知严重 Bug。</p>
+<hr />
+<h2 id="_14">七、开发规范</h2>
+<h3 id="_15">代码风格</h3>
+<ul>
+<li><strong>Go 标准项目布局</strong>：<code>cmd/</code> + <code>internal/</code></li>
+<li><strong>错误处理</strong>：走 <code>apperr</code> 统一体系</li>
+<li><strong>日志</strong>：走 <code>slog</code>（<code>ui.L()</code> 统一入口）</li>
+<li><strong>表格输出</strong>：走 <code>ui.Table</code>（<code>NewTable()</code> → <code>AddRow()</code> → <code>Render()</code>）</li>
+<li><strong>步骤进度</strong>：走 <code>ui.PrintStep(step, total, message)</code></li>
+<li><strong>配置</strong>：走 Viper，默认 <code>~/.config/newapi-tools/newapi-tools.yml</code></li>
+</ul>
+<h3 id="_16">提交规范</h3>
+<div class="highlight"><pre><span></span><code>前缀：feat: / fix: / ci: / docs: / refactor: / chore: / test:
+发布 tag：vX.Y.Z（语义版本）
+Changelog：自动从 git log 生成
+</code></pre></div>
+<h3 id="_17">测试要求</h3>
+<ul>
+<li>覆盖率门禁：<strong>≥30%</strong>（CI 强制执行）</li>
+<li>测试框架：Go 标准 <code>testing</code> 包</li>
+<li>CI 会运行 <code>golangci-lint</code>（errcheck/govet/staticcheck/unused/gosimple/ineffassign/gocyclo/gosec）</li>
+</ul>
+<hr />
+<h2 id="trae">八、TRAE 接手指引</h2>
+<h3 id="1">1. 首次打开</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># clone 仓库</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/simenty/newapi-tools.git
+<span class="nb">cd</span><span class="w"> </span>newapi-tools
+
+<span class="c1"># 切接手分支</span>
+git<span class="w"> </span>checkout<span class="w"> </span>handoff
+</code></pre></div>
+<p>在 TRAE 中打开 <code>newapi-tools/</code> 目录，启用源码管理（Source Control）。</p>
+<h3 id="2">2. 先跑通环境</h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># 编译</span>
+make<span class="w"> </span>build
+
+<span class="c1"># 运行</span>
+./dist/newapi-tools<span class="w"> </span>version
+
+<span class="c1"># 测试</span>
+make<span class="w"> </span><span class="nb">test</span>
+make<span class="w"> </span>vet
+make<span class="w"> </span>lint
+</code></pre></div>
+<h3 id="3_1">3. 推荐工作流程</h3>
+<div class="highlight"><pre><span></span><code>WorkBuddy (规划)           TRAE (实现)
+    │                        │
+    ├─ 拆需求/整理上下文      │
+    ├─ 规划任务清单           │
+    └─ 输出任务描述 ─────────→ ├─ 切换到 handoff 分支
+                              ├─ 实现一个小任务
+                              ├─ go build + go test
+                              ├─ git commit
+                              ├─ git push
+                              └─ 通知 WorkBuddy 复盘
+</code></pre></div>
+<h3 id="4">4. 每个任务的最小单元</h3>
+<div class="highlight"><pre><span></span><code>改动一处 → 编译 → 测试 → 提交 → 推送
+</code></pre></div>
+<p>不要跨任务修改。先修 Bug，再补测试，再加功能。</p>
+<hr />
+<h2 id="_18">九、联系方式</h2>
+<ul>
+<li><strong>GitHub Issues</strong>：https://github.com/simenty/newapi-tools/issues</li>
+<li><strong>上游项目</strong>：https://github.com/Calcium-Ion/new-api</li>
+<li><strong>项目维护者</strong>：simenty（GitHub）</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到页面顶部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.top", "search.suggest", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
