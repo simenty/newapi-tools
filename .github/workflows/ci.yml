@@ -89,3 +89,26 @@ jobs:
 
       - name: Run golangci-lint
         run: golangci-lint run --timeout=5m ./...
+
+  docs-check:
+    name: Docs Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Regenerate error code docs
+        run: go run cmd/gendocs/main.go > docs/errors.md
+
+      - name: Check docs/errors.md is up to date
+        run: |
+          if [ -n "$(git status --porcelain docs/errors.md)" ]; then
+            echo "ERROR: docs/errors.md is out of date!"
+            echo "Run 'go run cmd/gendocs/main.go > docs/errors.md' and commit the changes."
+            git diff docs/errors.md
+            exit 1
+          fi
+          echo "docs/errors.md is up to date."

@@ -61,8 +61,12 @@ func CheckLatest(ctx context.Context, repo string) (*ReleaseInfo, error) {
 // Returns true if latest is strictly greater than current.
 // Pre-release versions (e.g. "v3.3.0-rc1") are always treated as older than the release version.
 func CompareVersions(current, latest string) (bool, error) {
-	cur := parseSemver(current)
-	lat := parseSemver(latest)
+	cur, curOK := parseSemver(current)
+	lat, latOK := parseSemver(latest)
+
+	if !curOK || !latOK {
+		return false, fmt.Errorf("failed to parse version: current=%q (ok=%v) latest=%q (ok=%v)", current, curOK, latest, latOK)
+	}
 
 	if cur.major != lat.major {
 		return lat.major > cur.major, nil
@@ -93,12 +97,12 @@ type semver struct {
 }
 
 // parseSemver parses a version string like "v3.2.0" or "v3.2.0-rc1".
-// Returns zero semver on parse failure.
-func parseSemver(v string) semver {
-	s := strings.TrimPrefix(v, "v")
+// Returns zero semver on parse failure, with ok=false.
+func parseSemver(v string) (semver, bool) {
+	raw := strings.TrimPrefix(v, "v")
 
 	// Split pre-release suffix
-	parts := strings.SplitN(s, "-", 2)
+	parts := strings.SplitN(raw, "-", 2)
 	preRelease := ""
 	if len(parts) == 2 {
 		preRelease = parts[1]
@@ -107,12 +111,21 @@ func parseSemver(v string) semver {
 	// Parse major.minor.patch
 	nums := strings.SplitN(parts[0], ".", 3)
 	if len(nums) != 3 {
-		return semver{}
+		return semver{}, false
 	}
 
-	major, _ := strconv.Atoi(nums[0])
-	minor, _ := strconv.Atoi(nums[1])
-	patch, _ := strconv.Atoi(nums[2])
+	major, err := strconv.Atoi(nums[0])
+	if err != nil {
+		return semver{}, false
+	}
+	minor, err := strconv.Atoi(nums[1])
+	if err != nil {
+		return semver{}, false
+	}
+	patch, err := strconv.Atoi(nums[2])
+	if err != nil {
+		return semver{}, false
+	}
 
-	return semver{major: major, minor: minor, patch: patch, preRelease: preRelease}
+	return semver{major: major, minor: minor, patch: patch, preRelease: preRelease}, true
 }

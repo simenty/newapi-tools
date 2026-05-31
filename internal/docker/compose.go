@@ -17,8 +17,8 @@ type ServiceStatus struct {
 	Running bool
 }
 
-// safeProjectDir validates and cleans a project directory path to prevent command injection.
-func safeProjectDir(dir string) (string, error) {
+// SafeProjectDir validates and cleans a project directory path to prevent command injection.
+func SafeProjectDir(dir string) (string, error) {
 	clean := filepath.Clean(dir)
 	abs, err := filepath.Abs(clean)
 	if err != nil {
@@ -30,7 +30,7 @@ func safeProjectDir(dir string) (string, error) {
 // ComposeUp starts the compose services in detached mode.
 // Uses exec.Command to call docker compose CLI.
 func (c *Client) ComposeUp(ctx context.Context, projectDir string) error {
-	safeDir, err := safeProjectDir(projectDir)
+	safeDir, err := SafeProjectDir(projectDir)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (c *Client) ComposeUp(ctx context.Context, projectDir string) error {
 
 // ComposeDown stops and removes the compose services.
 func (c *Client) ComposeDown(ctx context.Context, projectDir string) error {
-	safeDir, err := safeProjectDir(projectDir)
+	safeDir, err := SafeProjectDir(projectDir)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (c *Client) ComposeDown(ctx context.Context, projectDir string) error {
 
 // ComposePull pulls the latest images for the compose services.
 func (c *Client) ComposePull(ctx context.Context, projectDir string) error {
-	safeDir, err := safeProjectDir(projectDir)
+	safeDir, err := SafeProjectDir(projectDir)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func (c *Client) ComposePull(ctx context.Context, projectDir string) error {
 
 // ComposePs lists the status of compose services.
 func (c *Client) ComposePs(ctx context.Context, projectDir string) ([]ServiceStatus, error) {
-	safeDir, err := safeProjectDir(projectDir)
+	safeDir, err := SafeProjectDir(projectDir)
 	if err != nil {
 		return nil, err
 	}

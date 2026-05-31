@@ -60,3 +60,10 @@ newapi-tools-windows-amd64.exe
 
 # MkDocs build output
 site/
+
+# WorkBuddy workspace notes
+.workbuddy/
+
+# Audit reports (temporary analysis documents)
+*审计报告*
+*审计报告*.md

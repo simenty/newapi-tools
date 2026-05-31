@@ -17,6 +17,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Validate tag format
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "Tag: $TAG"
+          if ! echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "ERROR: Tag must follow semver format vX.Y.Z (got: $TAG)"
+            exit 1
+          fi
+          echo "Tag format valid."
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
@@ -87,8 +97,13 @@ jobs:
             git log $PREV_TAG..HEAD --oneline --no-decorate | grep -E "^[0-9a-f]+ ci" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
             echo "" >> release_notes.md
 
-            echo "### � 其他变更" >> release_notes.md
+            echo "### 🛠️ 其他变更" >> release_notes.md
             git log $PREV_TAG..HEAD --oneline --no-decorate | grep -v -E "^[0-9a-f]+ (feat|fix|refactor|chore|docs|style|test|ci)" | sed 's/^[0-9a-f]* /- /' >> release_notes.md || true
+            echo "" >> release_notes.md
+
+            echo "### ⚠️ 升级注意事项" >> release_notes.md
+            echo "- 建议升级前先执行 \`newapi-tools doctor\` 确认当前环境正常" >> release_notes.md
+            echo "- 如需回滚，备份文件在 \`~/.config/newapi-tools/backups/\`" >> release_notes.md
             echo "" >> release_notes.md
           fi
 

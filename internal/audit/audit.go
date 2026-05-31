@@ -63,7 +63,7 @@ func (a *AuditLogger) Log(entry AuditEntry) error {
 	defer a.mu.Unlock()
 
 	// Ensure the directory exists
-	if err := os.MkdirAll(filepath.Dir(a.path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(a.path), 0700); err != nil {
 		return fmt.Errorf("audit: failed to create directory: %w", err)
 	}
 
@@ -163,61 +163,85 @@ type ListOption struct {
 	Since   time.Time // Filter entries after this time (zero = no filter)
 }
 
-// List returns audit log entries matching the given options
+// List returns audit log entries matching the given options.
+// When opt.Last > 0, uses a ring buffer to avoid loading all entries into memory.
 func (r *AuditReader) List(opt ListOption) ([]AuditEntry, error) {
 	// Open log file
 	file, err := os.Open(r.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []AuditEntry{}, nil // No log file, return empty
+			return []AuditEntry{}, nil
 		}
 		return nil, fmt.Errorf("open audit log: %w", err)
 	}
 	defer file.Close()
 
-	var entries []AuditEntry
 	decoder := json.NewDecoder(file)
 
-	// Read all entries
+	// When opt.Last > 0, use a ring buffer to keep only the most recently matching N entries
+	if opt.Last > 0 {
+		ring := make([]AuditEntry, 0, opt.Last)
+		for decoder.More() {
+			var entry AuditEntry
+			if err := decoder.Decode(&entry); err != nil {
+				continue
+			}
+			if !r.matchesFilter(entry, opt) {
+				continue
+			}
+			if len(ring) < opt.Last {
+				ring = append(ring, entry)
+			} else {
+				// Shift: drop oldest, append newest
+				ring = append(ring[1:], entry)
+			}
+		}
+		// Reverse to show newest first
+		for i, j := 0, len(ring)-1; i < j; i, j = i+1, j-1 {
+			ring[i], ring[j] = ring[j], ring[i]
+		}
+		return ring, nil
+	}
+
+	// No Last limit: read all entries
+	var entries []AuditEntry
 	for decoder.More() {
 		var entry AuditEntry
 		if err := decoder.Decode(&entry); err != nil {
-			// Skip malformed lines
 			continue
 		}
 		entries = append(entries, entry)
 	}
 
-	// Apply filters
+	// Apply non-Last filters (Command, Since)
 	filtered := r.filterEntries(entries, opt)
 
 	return filtered, nil
+}
+
+// matchesFilter checks if a single entry matches the command and since filters.
+func (r *AuditReader) matchesFilter(entry AuditEntry, opt ListOption) bool {
+	if opt.Command != "" {
+		if !strings.Contains(strings.ToLower(entry.Command), strings.ToLower(opt.Command)) {
+			return false
+		}
+	}
+	if !opt.Since.IsZero() {
+		if entry.Timestamp.Before(opt.Since) {
+			return false
+		}
+	}
+	return true
 }
 
 func (r *AuditReader) filterEntries(entries []AuditEntry, opt ListOption) []AuditEntry {
 	var result []AuditEntry
 
 	for _, entry := range entries {
-		// Filter by command
-		if opt.Command != "" {
-			if !strings.Contains(strings.ToLower(entry.Command), strings.ToLower(opt.Command)) {
-				continue
-			}
+		if !r.matchesFilter(entry, opt) {
+			continue
 		}
-
-		// Filter by time
-		if !opt.Since.IsZero() {
-			if entry.Timestamp.Before(opt.Since) {
-				continue
-			}
-		}
-
 		result = append(result, entry)
-	}
-
-	// Apply Last filter (take most recent N)
-	if opt.Last > 0 && len(result) > opt.Last {
-		result = result[len(result)-opt.Last:]
 	}
 
 	// Reverse to show newest first

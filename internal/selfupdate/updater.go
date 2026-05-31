@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/simenty/newapi-tools/internal/core"
 )
 
 // SelfUpdateOptions configures the self-update process
@@ -19,6 +21,7 @@ type SelfUpdateOptions struct {
 	CurrentBinary string                          // Path to current binary (os.Executable())
 	Repo          string                          // GitHub repo name "owner/repo"
 	BackupDir     string                          // Backup directory (default ~/.config/newapi-tools/backups/)
+	RequireSHA256 bool                            // If true, refuse to proceed without SHA256 verification
 	OnProgress    func(stage string, pct float64) // Progress callback
 }
 
@@ -73,7 +76,7 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 	}
 
 	// Verify SHA256 (optional but recommended)
-	if err := verifySHA256(ctx, tmpPath, asset); err != nil {
+	if err := verifySHA256(ctx, tmpPath, asset, opts.RequireSHA256); err != nil {
 		return nil, fmt.Errorf("verify SHA256: %w", err)
 	}
 
@@ -89,7 +92,7 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 	}
 
 	return &SelfUpdateResult{
-		PreviousVersion: "", // Would need to get this from binary
+		PreviousVersion: core.Version,
 		NewVersion:      release.TagName,
 		BinaryPath:      opts.CurrentBinary,
 		BackupPath:      backupPath,
@@ -148,7 +151,7 @@ func downloadAsset(ctx context.Context, asset *Asset, dest string, onProgress fu
 
 // verifySHA256 verifies the SHA256 hash of the downloaded file
 // Tries to read from <asset>.sha256 file from GitHub Release
-func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
+func verifySHA256(ctx context.Context, filePath string, asset *Asset, requireSHA256 bool) error {
 	// Calculate hash of downloaded file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -166,6 +169,9 @@ func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 	sha256URL := asset.BrowserDownloadURL + ".sha256"
 	req, err := http.NewRequestWithContext(ctx, "GET", sha256URL, nil)
 	if err != nil {
+		if requireSHA256 {
+			return fmt.Errorf("SHA256 checksum unavailable: %w (use --skip-verify to override)", err)
+		}
 		fmt.Printf("Warning: Could not create SHA256 request: %v\n", err)
 		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
@@ -176,6 +182,9 @@ func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		if requireSHA256 {
+			return fmt.Errorf("SHA256 checksum unavailable: %w (use --skip-verify to override)", err)
+		}
 		fmt.Println("Warning: SHA256 checksum unavailable, skipping verification")
 		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
@@ -183,6 +192,9 @@ func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		resp.Body.Close()
+		if requireSHA256 {
+			return fmt.Errorf("SHA256 file not available (HTTP %d)", resp.StatusCode)
+		}
 		fmt.Printf("Warning: SHA256 file not available (HTTP %d)\n", resp.StatusCode)
 		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
@@ -193,6 +205,9 @@ func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 	// Read and parse SHA256
 	checksumData, err := io.ReadAll(resp.Body)
 	if err != nil {
+		if requireSHA256 {
+			return fmt.Errorf("could not read SHA256 file: %w", err)
+		}
 		fmt.Printf("Warning: Could not read SHA256 file: %v\n", err)
 		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
@@ -202,6 +217,9 @@ func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 	// Extract the hash from the content (format: "<hash>  <filename>")
 	parts := strings.Fields(string(checksumData))
 	if len(parts) < 1 {
+		if requireSHA256 {
+			return fmt.Errorf("invalid SHA256 file format")
+		}
 		fmt.Printf("Warning: Invalid SHA256 file format\n")
 		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
@@ -230,7 +248,7 @@ func backupAndReplace(currentBin, newBin, backupDir string) (string, error) {
 		backupDir = filepath.Join(home, ".config", "newapi-tools", "backups")
 	}
 
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
+	if err := os.MkdirAll(backupDir, 0700); err != nil {
 		return "", fmt.Errorf("create backup dir: %w", err)
 	}
 
@@ -261,11 +279,26 @@ func backupAndReplace(currentBin, newBin, backupDir string) (string, error) {
 
 	// Atomic replace: rename new file to current
 	if err := os.Rename(newBin, currentBin); err != nil {
-		// Try to restore backup if replace fails
-		if restoreErr := os.Rename(backupPath, currentBin); restoreErr != nil {
-			fmt.Printf("Warning: Failed to restore backup: %v\n", restoreErr)
+		// Cross-partition rename (EXDEV) — fall back to copy + rename on same partition
+		if strings.Contains(err.Error(), "cross-device") || strings.Contains(err.Error(), "EXDEV") {
+			tmpDst := currentBin + ".new"
+			if copyErr := copyFile(newBin, tmpDst); copyErr != nil {
+				_ = os.Rename(backupPath, currentBin) // try restore
+				return "", fmt.Errorf("replace binary (copy fallback): %w", copyErr)
+			}
+			if renameErr := os.Rename(tmpDst, currentBin); renameErr != nil {
+				_ = os.Rename(backupPath, currentBin) // try restore
+				os.Remove(tmpDst)
+				return "", fmt.Errorf("replace binary (final rename): %w", renameErr)
+			}
+			os.Remove(tmpDst)
+		} else {
+			// Try to restore backup if replace fails
+			if restoreErr := os.Rename(backupPath, currentBin); restoreErr != nil {
+				fmt.Printf("Warning: Failed to restore backup: %v\n", restoreErr)
+			}
+			return "", fmt.Errorf("replace binary: %w", err)
 		}
-		return "", fmt.Errorf("replace binary: %w", err)
 	}
 
 	return backupPath, nil
@@ -301,4 +334,24 @@ func resolveAssetName(version string) string {
 	}
 
 	return fmt.Sprintf("newapi-tools_%s_%s_%s.%s", version, osName, archName, ext)
+}
+
+// copyFile copies a file from src to dst with 0600 permissions.
+func copyFile(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, in); err != nil {
+		return err
+	}
+	return out.Close()
 }

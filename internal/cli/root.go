@@ -33,6 +33,11 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Ensure i18n is initialized before any command runs
+		if err := i18n.Init(""); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: i18n init failed: %v\n", err)
+		}
+
 		// Run Docker group permission pre-check (non-blocking warning)
 		inGroup, err := security.CheckDockerGroup()
 		if err == nil && !inGroup {

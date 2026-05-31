@@ -3,6 +3,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -475,6 +476,7 @@ func checkHTTPHealth(port int) checkResult {
 		}
 	}
 	defer resp.Body.Close()
+	resp.Body = http.MaxBytesReader(nil, resp.Body, 4096)
 
 	if resp.StatusCode < 500 {
 		return checkResult{
@@ -697,41 +699,26 @@ func printVerboseDetail(d *VerboseCheck, indent int) {
 }
 
 func printDoctorJSON(results []checkResult, verbose bool) {
-	fmt.Println("[")
-	for i, r := range results {
-		comma := ","
-		if i == len(results)-1 {
-			comma = ""
+	type resultJSON struct {
+		Check   string       `json:"check"`
+		Status  string       `json:"status"`
+		Message string       `json:"message"`
+		Detail  *VerboseCheck `json:"detail,omitempty"`
+	}
+	items := make([]resultJSON, 0, len(results))
+	for _, r := range results {
+		item := resultJSON{
+			Check:   r.Name,
+			Status:  r.Status,
+			Message: r.Message,
 		}
 		if verbose && r.Detail != nil {
-			fmt.Printf("  {\"check\": %q, \"status\": %q, \"message\": %q, \"detail\": %s}%s\n",
-				r.Name, r.Status, r.Message, detailToJSON(r.Detail), comma)
-		} else {
-			fmt.Printf("  {\"check\": %q, \"status\": %q, \"message\": %q}%s\n",
-				r.Name, r.Status, r.Message, comma)
+			item.Detail = r.Detail
 		}
+		items = append(items, item)
 	}
-	fmt.Println("]")
-}
-
-func detailToJSON(d *VerboseCheck) string {
-	parts := []string{}
-	if d.FilePath != "" {
-		parts = append(parts, fmt.Sprintf("\"file_path\": %q", d.FilePath))
-	}
-	if d.Command != "" {
-		parts = append(parts, fmt.Sprintf("\"command\": %q", d.Command))
-	}
-	if d.Expected != "" {
-		parts = append(parts, fmt.Sprintf("\"expected\": %q", d.Expected))
-	}
-	if d.Actual != "" {
-		parts = append(parts, fmt.Sprintf("\"actual\": %q", d.Actual))
-	}
-	if d.RawOutput != "" {
-		parts = append(parts, fmt.Sprintf("\"raw_output\": %q", d.RawOutput))
-	}
-	return "{" + strings.Join(parts, ", ") + "}"
+	data, _ := json.MarshalIndent(items, "", "  ")
+	fmt.Println(string(data))
 }
 
 // ---- Auto-fix logic ----

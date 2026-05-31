@@ -177,7 +177,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	fmt.Println("  Containers recreated.")
 
 	// --- Step [3/3]: Verify service ---
-	ui.PrintStep(3, 3, "update.complete")
+	ui.PrintStep(3, 3, i18n.T("update.complete"))
 
 	// Verify the container is running
 	time.Sleep(2 * time.Second)
@@ -243,7 +243,7 @@ func performBackup(ctx context.Context, cfg *core.Config) (string, error) {
 	timestamp := time.Now().Format("20060102-150405")
 	archivePath := filepath.Join(backupDir, "newapi-backup-"+timestamp+"-preupdate.tar.gz")
 
-	if err := os.MkdirAll(backupDir, 0755); err != nil {
+	if err := os.MkdirAll(backupDir, 0700); err != nil {
 		return "", err
 	}
 
@@ -281,9 +281,9 @@ func performRestore(ctx context.Context, cfg *core.Config, backupPath string) er
 
 // composeUpForceRecreate runs "docker compose up -d --force-recreate".
 func composeUpForceRecreate(ctx context.Context, projectDir, composeCmd string) error {
-	safeDir, err := filepath.Abs(filepath.Clean(projectDir))
+	safeDir, err := docker.SafeProjectDir(projectDir)
 	if err != nil {
-		return fmt.Errorf("invalid project directory: %w", err)
+		return err
 	}
 	if composeCmd == "" {
 		composeCmd = "docker compose"

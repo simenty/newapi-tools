@@ -55,8 +55,8 @@ func (e *AppError) Unwrap() error {
 // The message is translated via i18n.T() if a matching key exists.
 // If suggestion is empty, it is populated from i18n.
 func New(code, msg, suggestion string, cause error) *AppError {
-	// Try i18n translation for the message
-	translatedMsg := i18n.T(code, msg)
+	// Try i18n translation for the message - pass only the key, NOT msg as format arg
+	translatedMsg := i18n.T(code)
 	if translatedMsg == code {
 		// No i18n key matched, use the provided message
 		translatedMsg = msg
