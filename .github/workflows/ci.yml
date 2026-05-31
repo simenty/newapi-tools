@@ -48,7 +48,8 @@ jobs:
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
         run: |
-          $coverage = (go tool cover -func=coverage.out | Select-String "total" | ForEach-Object { $_ -replace '.*total\s+\d+\.\d+\s+(\d+\.\d+)%.*', '$1' })
+          $line = go tool cover -func=coverage.out | Select-String "total"
+          $coverage = ($line -replace '.*\(statements\)\s+(\d+\.?\d*)%.*', '$1')
           Write-Host "Coverage: ${coverage}%"
           $coverageValue = [double]$coverage
           if ($coverageValue -lt 20) {
