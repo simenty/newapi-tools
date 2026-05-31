@@ -45,6 +45,9 @@ make build
 # Install with custom port
 newapi-tools install --port 8080
 
+# Install with custom domain and health timeout
+newapi-tools install --domain newapi.example.com --health-timeout 300
+
 # Install using a specific registry mirror
 newapi-tools install --mirror tuna
 
@@ -66,17 +69,33 @@ newapi-tools doctor --json
 # Auto-fix detected issues
 newapi-tools doctor --fix
 
+# Verbose diagnostic output
+newapi-tools doctor --verbose
+
 # View current config
 newapi-tools config
 
 # Set a config value and persist
 newapi-tools config set newapi.port 8080
+newapi-tools config set newapi.domain newapi.example.com
 
 # Interactive config wizard
 newapi-tools config init
 
 # Use custom config file
 newapi-tools --config /etc/newapi-tools.yml status
+
+# Add a new instance
+newapi-tools instance add prod --port 8080 --domain newapi.example.com
+
+# List all instances
+newapi-tools instance list
+
+# Switch to another instance
+newapi-tools instance switch prod
+
+# Use a specific instance for a single command
+newapi-tools --instance prod status
 ```
 
 ### Mirror Examples
