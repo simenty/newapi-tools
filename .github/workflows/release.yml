@@ -129,6 +129,10 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           echo "Creating release for version v${VERSION}..."
+
+          # Delete existing release if it exists (for re-triggers)
+          gh release delete "${GITHUB_REF_NAME}" --yes 2>/dev/null || true
+
           ASSETS=$(ls dist/*.tar.gz dist/*.zip dist/checksums.txt 2>/dev/null | tr '\n' ' ')
           gh release create "${GITHUB_REF_NAME}" \
             --title "v${VERSION}" \
