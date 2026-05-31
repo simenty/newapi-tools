@@ -1,192 +1,146 @@
+<div align="right">
+  <a href="README.md">🇨🇳 中文</a> | <a href="README_EN.md">🇬🇧 English</a>
+</div>
+
 # NewAPI Tools V3.4
 
-Docker management platform for [new-api](https://github.com/Calcium-Ion/new-api), rewritten in Go.
+Docker 管理平台，用于部署和管理 [new-api](https://github.com/Calcium-Ion/new-api) 服务。Go 重写。
 
-## Quick Start
+---
+
+## 快速开始
 
 ```bash
-# Build
+# 构建
 make build
 
-# Install new-api
+# 安装 new-api
 ./dist/newapi-tools install
 
-# Check status
+# 查看状态
 ./dist/newapi-tools status
 
-# Run diagnostics
+# 运行诊断
 ./dist/newapi-tools doctor
 
-# View / edit configuration
+# 查看/编辑配置
 ./dist/newapi-tools config
 ./dist/newapi-tools config set newapi.port 8080
 
-# Speed up image pulls (China mainland)
+# 配置镜像加速（中国大陆）
 ./dist/newapi-tools mirror add tuna
 
-# Check for self-update
+# 检查 CLI 更新
 ./dist/newapi-tools update --check
 ```
 
-## Commands
+---
 
-| Command | Description |
-|---------|-------------|
-| `install` | Deploy new-api with Docker Compose (interactive wizard with `--interactive`) |
-| `status` / `ls` | Show container status. Use `--json` for JSON output, `--instance <name>` for multi-instance |
-| `backup` | Backup new-api data (configs + MySQL dump + data dir) to a `.tar.gz` archive |
-| `restore` | Restore from a backup archive. Use `--file latest` to auto-pick newest |
-| `update` | Update new-api image, or `--self` to update the CLI binary itself, `--check` to inspect |
-| `doctor` | Run 12 diagnostic checks: Docker, containers, ports, disk, config files, permissions. Use `--fix` to auto-repair, `--verbose` for detail |
-| `config` | View or modify configuration. Subcommands: `set`, `init` (interactive wizard), `chmod` (secure file perms) |
-| `mirror` | Manage Docker registry mirrors to speed up image pulls in China |
-| `instance` | Manage multiple new-api instances: `add`, `list`, `switch`, `remove` |
-| `audit` | View command audit log: `list --last N`, `--cmd`, `--since`, `--json` |
-| `version` | Print version and build info |
+## 命令列表
 
-### Examples
+| 命令 | 说明 |
+|------|------|
+| `install` | 部署 new-api（支持 `--interactive` 交互式向导） |
+| `status` / `ls` | 查看容器状态。`--json` JSON输出，`--instance <name>` 指定实例 |
+| `backup` | 备份配置、MySQL 数据、数据目录到 `.tar.gz` |
+| `restore` | 从备份恢复。`--file latest` 自动选最新备份 |
+| `update` | 更新容器镜像；`--self` 自更新 CLI 本身；`--check` 仅检查版本 |
+| `doctor` | 12 项诊断检查（Docker/容器/端口/磁盘/配置/权限）。`--fix` 自动修复，`--verbose` 详细输出 |
+| `config` | 配置管理。子命令：`set`、`init`（交互向导）、`chmod`（修复文件权限） |
+| `mirror` | Docker 镜像加速管理。`add/remove/list/apply/test/reset/builtin` |
+| `instance` | 多实例管理。`add/list/switch/remove` |
+| `audit` | 审计日志查询。`list --last N`、`--cmd`、`--since`、`--json` |
+| `version` | 打印版本和构建信息 |
+
+### 常用示例
 
 ```bash
-# Install with custom port
+# 安装
 newapi-tools install --port 8080
+newapi-tools install --domain newapi.example.com --mirror tuna
 
-# Install with custom domain and health timeout
-newapi-tools install --domain newapi.example.com --health-timeout 300
-
-# Install using a specific registry mirror
-newapi-tools install --mirror tuna
-
-# Create a backup
-newapi-tools backup --output /var/backups
-
-# Restore latest backup
+# 备份与恢复
+newapi-tools backup
 newapi-tools restore --file latest --force
 
-# Update to a specific tag
-newapi-tools update --image calciumion/new-api:v0.3.x
-
-# Update using a registry mirror
-newapi-tools update --mirror tuna
-
-# Check for CLI updates
+# 自更新
 newapi-tools update --check
-
-# Self-update the CLI binary
 newapi-tools update --self
 
-# Full diagnostic report in JSON
+# 诊断
 newapi-tools doctor --json
-
-# Auto-fix detected issues
 newapi-tools doctor --fix
-
-# Verbose diagnostic output
 newapi-tools doctor --verbose
 
-# View current config
+# 配置
 newapi-tools config
-
-# Set a config value and persist
 newapi-tools config set newapi.port 8080
-newapi-tools config set newapi.domain newapi.example.com
-
-# Interactive config wizard
 newapi-tools config init
-
-# Fix config file permissions (chmod 600)
 newapi-tools config chmod
 
-# View audit log (last 10 entries)
+# 审计
 newapi-tools audit list --last 10
-
-# View audit log filtered by command
 newapi-tools audit list --cmd install
 
-# Use custom config file
-newapi-tools --config /etc/newapi-tools.yml status
-
-# Add a new instance
-newapi-tools instance add prod --port 8080 --domain newapi.example.com
-
-# List all instances
+# 多实例
+newapi-tools instance add prod --port 8080
 newapi-tools instance list
-
-# Switch to another instance
 newapi-tools instance switch prod
-
-# Use a specific instance for a single command
 newapi-tools --instance prod status
-```
 
-### Mirror Examples
-
-```bash
-# List built-in mirrors
+# 镜像加速
 newapi-tools mirror builtin
-
-# Add TUNA mirror (Tsinghua University)
+newapi-tools mirror test tuna aliyun
 newapi-tools mirror add tuna
-
-# Add a custom mirror URL
-newapi-tools mirror add https://my-mirror.example.com
-
-# List currently configured mirrors
 newapi-tools mirror list
-
-# Test if a mirror is reachable
-newapi-tools mirror test tuna
-
-# Apply mirror list to /etc/docker/daemon.json and reload Docker
 newapi-tools mirror apply
-
-# Remove a mirror
-newapi-tools mirror remove tuna
-
-# Reset to empty (no mirrors)
-newapi-tools mirror reset
 ```
 
-Built-in mirror shortcuts: `tuna`, `aliyun`, `ustc`, `163`, `azure`, `daocloud`
+内置镜像源：`tuna`（清华）、`aliyun`（阿里云）、`ustc`（中科大）、`163`（网易）、`azure`（微软）、`daocloud`（道客）
 
-## Project Structure
+---
+
+## 项目结构
 
 ```
 newapi-tools/
-├── cmd/newapi/          # Entry point (main.go)
-├── cmd/gendocs/         # Error code doc generator
+├── cmd/newapi/          # 入口 main.go
+├── cmd/gendocs/         # 错误码文档生成器
 ├── internal/
-│   ├── apperr/          # Structured error codes & suggestions
-│   ├── audit/           # Audit logging (JSON Lines + ring buffer query)
-│   ├── cli/             # Cobra commands (12 commands)
-│   ├── core/            # Config, version constants
-│   ├── docker/          # Docker CLI wrapper + compose + mirror management
-│   ├── i18n/            # Internationalization (zh-CN / en)
-│   ├── instance/        # Multi-instance metadata store
-│   ├── osutil/          # OS adapters (Debian/RHEL/Fedora/Arch)
-│   ├── plugin/          # Plugin system (ShellPlugin/GoPlugin)
-│   ├── registry/        # Command registry
-│   ├── security/        # Permissions checking & fixing
-│   ├── selfupdate/      # CLI self-update (GitHub Releases)
-│   └── ui/              # Output formatting (table, logger, progress)
-├── plugins/newapi/      # newapi Shell plugin (metadata.yml + scripts/)
-├── configs/             # Default config files
-├── docs/                # MkDocs documentation site
-└── .github/workflows/   # CI + Release + Docs automation
+│   ├── apperr/          # 结构化错误码与建议
+│   ├── audit/           # 审计日志（JSON Lines + 环形缓冲查询）
+│   ├── cli/             # Cobra 命令（12 个命令）
+│   ├── core/            # 配置加载、版本常量
+│   ├── docker/          # Docker CLI 封装、Compose 操作、镜像管理
+│   ├── i18n/            # 国际化（zh-CN / en）
+│   ├── instance/        # 多实例元数据存储
+│   ├── osutil/          # 操作系统适配（Debian/RHEL/Fedora/Arch）
+│   ├── plugin/          # 插件系统（ShellPlugin/GoPlugin）
+│   ├── registry/        # 命令注册表
+│   ├── security/        # 安全权限检查与修复
+│   ├── selfupdate/      # CLI 自更新（GitHub Releases）
+│   └── ui/              # 终端输出工具（表格/进度条/日志/错误）
+├── plugins/newapi/      # newapi Shell 插件
+├── configs/             # 默认配置文件
+├── docs/                # MkDocs 文档站
+├── .github/workflows/   # CI + 发布 + 文档自动化
 ```
 
-## Configuration
+---
 
-Default config location: `~/.config/newapi-tools/newapi-tools.yml`
+## 配置文件
+
+默认路径：`~/.config/newapi-tools/newapi-tools.yml`
 
 ```yaml
 newapi:
-  home: /opt/newapi          # Installation directory
-  port: 3000                 # Host port for new-api
+  home: /opt/newapi          # 安装目录
+  port: 3000                 # 映射端口
   docker_image: calciumion/new-api:latest
   backup_dir: /opt/newapi/backups
-  domain: ""                 # Custom domain for new-api (optional)
-  health_timeout: 120        # Health check timeout in seconds
-  max_backups: 10            # Maximum number of backups to keep
+  domain: ""                 # 自定义域名（可选）
+  health_timeout: 120        # 健康检查超时（秒）
+  max_backups: 10            # 最大备份保留数
 
 docker:
   compose_cmd: "docker compose"
@@ -196,69 +150,100 @@ log:
   format: text               # text | json
 
 instance:
-  active: ""                 # Current active instance name
+  active: ""                 # 当前活跃实例名
 ```
 
-Override via CLI flags or `config set`:
+也可通过 CLI 参数覆盖：
 ```bash
 newapi-tools config set newapi.port 8080
-newapi-tools config init                    # Interactive wizard
+newapi-tools config init
 newapi-tools --log-level debug status
 newapi-tools --config /path/to/config.yml status
 ```
 
-## Development
+---
+
+## 开发
 
 ```bash
-make build    # Build binary → dist/newapi-tools
-make test     # Run all tests (16 packages)
-make run      # Run locally
+make build    # 编译 → dist/newapi-tools
+make test     # 运行测试（16 个包）
+make run      # 本地运行
 make lint     # golangci-lint
-make vet      # go vet ./...
-make coverage # Generate test coverage report
-make docs     # Generate error code docs
+make vet      # go vet
+make coverage # 测试覆盖率报告
+make docs     # 生成错误码文档
 ```
 
-### Running Tests
+### 运行测试
 
 ```bash
-go test ./...                  # All packages
-go test ./internal/cli/ -v     # CLI tests only
-go test ./... -count=1         # Force no cache
+go test ./...                  # 全部包
+go test ./internal/cli/ -v     # 仅 CLI 包
+go test ./... -count=1         # 不缓存
 ```
 
-### Cross-compile for Linux
+### 交叉编译
 
 ```bash
 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o dist/newapi-tools-linux-amd64 ./cmd/newapi/
 ```
 
-## Plugin System
+---
 
-Plugins are discovered from `./plugins/` at startup:
+## 插件系统
 
-- **Shell plugins**: directory with `metadata.yml` + `scripts/` → executed via `bash`
-- **Go plugins**: directory with `plugin.go` → compiled as Go code
+启动时自动扫描 `./plugins/` 目录：
 
-The bundled `plugins/newapi/` plugin provides 7 commands as shell scripts, with `install` and `status` already promoted to native Go implementations.
+- **Shell 插件**：目录含 `metadata.yml` + `scripts/`，通过 bash 执行
+- **Go 插件**：目录含 `plugin.go`，编译时注册
 
-## Version History
+内置 `plugins/newapi/` 插件提供 7 个 Shell 脚本命令，`install` 和 `status` 已升级为原生 Go 实现。
 
-| Version | Highlights |
-|---------|-----------|
-| V3.4.0  | Audit report fixes: cross-partition EXDEV fallback, `--json` now uses `encoding/json`, audit ring buffer, CI docs check |
-| V3.3.5  | Fix resolveAssetName semver comparison, doctor error code X001, audit double logging |
-| V3.3.4  | Security audit: path traversal fix, permission lockdown, shell injection prevention, race condition fixes |
-| V3.3.0  | Domain/MaxBackups config, `Check` struct refactor, auto-rollback |
-| V3.2.0  | Self-update (`update --check` / `--self`), Audit log (`audit list`), Multi-instance management (`instance add/list/switch/remove`), Auto-generated error code docs |
-| V3.1.0  | i18n framework, structured error handling, audit logging, security checks, interactive install wizard |
-| V3.0.0  | mirror command (add/remove/list/apply/test/reset/builtin), 6 built-in CN mirrors, 83 tests |
-| V3.0-rc | 9 commands Go-native (incl. config + doctor --fix), 78 tests, Git v2/main split |
-| V3.0-a3 | install + status Go-native, newapi Shell plugin, 52 tests |
-| V3.0-a2 | Plugin system, Registry, Docker wrapper, OS adapter |
-| V3.0-a1 | Go project skeleton, Cobra CLI, Viper config, slog |
-| V2.4    | Shell V2 with plugin system (archived on `v2` branch) |
+---
 
-## License
+## 版本历史
+
+| 版本 | 亮点 |
+|------|------|
+| V3.4.0 | 审计报告修复（跨分区回滚、JSON 统一序列化、环形缓冲、CI 文档检查） |
+| V3.3.5 | 修复 resolveAssetName semver 对比、doctor 错误码 X001、审计双日志 |
+| V3.3.4 | 安全审计：路径遍历防护、权限锁定、Shell 注入防护、竞态条件修复 |
+| V3.3.0 | Domain/MaxBackups 配置扩展、Check 结构体重构、自动回滚 |
+| V3.2.0 | 自更新（`--check`/`--self`）、审计日志查询、多实例管理、错误码文档自动生成 |
+| V3.1.0 | 国际化框架、结构化错误处理、审计日志、安全检查、交互式安装向导 |
+| V3.0.0 | 镜像管理（6 个内置 CN 源）、83 个测试 |
+| V3.0-rc | 9 个 Go 原生命令、78 个测试、Git v2/main 分支分离 |
+| V3.0-a3 | install + status 原生 Go、newapi Shell 插件、52 个测试 |
+| V3.0-a2 | 插件系统、注册表、Docker 封装、OS 适配 |
+| V3.0-a1 | Go 项目骨架、Cobra CLI、Viper 配置、slog |
+| V2.4 | Shell V2 插件系统（已归档到 `v2` 分支） |
+
+---
+
+## 许可证
 
 MIT
+
+---
+
+<h1 align="center">English</h1>
+
+<p align="center"><a href="README_EN.md">📖 Read the full English version →</a></p>
+
+**NewAPI Tools V3.4** — Docker management platform for [new-api](https://github.com/Calcium-Ion/new-api), rewritten in Go.
+
+| Feature | Description |
+|---------|-------------|
+| `install` | Deploy new-api with Docker Compose (interactive wizard) |
+| `status` / `ls` | Show container status (`--json`, `--instance`) |
+| `backup` / `restore` | Backup & restore with MySQL dump |
+| `update` | Docker image update & CLI self-update (`--self`/`--check`) |
+| `doctor` | 12 diagnostic checks with auto-fix (`--fix`/`--verbose`) |
+| `config` | Config management (`set`/`init`/`chmod`) |
+| `mirror` | Docker registry mirror management |
+| `instance` | Multi-instance management |
+| `audit` | Command audit log query |
+| `version` | Print version info |
+
+For complete English documentation, see [README_EN.md](README_EN.md).
