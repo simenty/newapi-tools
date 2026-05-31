@@ -48,11 +48,22 @@ jobs:
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
         run: |
-          $line = go tool cover -func=coverage.out | Select-String "total"
-          $coverage = ($line -replace '.*\(statements\)\s+(\d+\.?\d*)%.*', '$1')
+          $totalStatements = 0
+          $coveredStatements = 0
+          Get-Content coverage.out | Select-Object -Skip 1 | ForEach-Object {
+            $parts = $_ -split '\s+'
+            if ($parts.Count -ge 3) {
+              $numStatements = [int]$parts[1]
+              $execCount = [int]$parts[2]
+              $totalStatements += $numStatements
+              if ($execCount -gt 0) {
+                $coveredStatements += $numStatements
+              }
+            }
+          }
+          $coverage = [math]::Round(($coveredStatements / $totalStatements) * 100, 1)
           Write-Host "Coverage: ${coverage}%"
-          $coverageValue = [double]$coverage
-          if ($coverageValue -lt 20) {
+          if ($coverage -lt 20) {
             Write-Host "Coverage too low: ${coverage}% < 20%"
             exit 1
           }
