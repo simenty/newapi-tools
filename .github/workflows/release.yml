@@ -32,9 +32,10 @@ jobs:
           fail_ci_if_error: false
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: '~> v2'
-          args: release --clean
+        run: |
+          GORELEASER_VERSION=v2.14.1
+          curl -sL "https://github.com/goreleaser/goreleaser/releases/download/$GORELEASER_VERSION/goreleaser_$(uname -s)_x86_64.tar.gz" -o goreleaser.tar.gz
+          tar -xzf goreleaser.tar.gz goreleaser
+          ./goreleaser release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
