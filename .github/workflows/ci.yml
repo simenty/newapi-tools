@@ -28,8 +28,37 @@ jobs:
       - name: Vet
         run: go vet ./...
 
-      - name: Test
-        run: go test ./... -count=1 -timeout 120s
+      - name: Test with Coverage
+        run: go test ./... -count=1 -timeout 120s -coverprofile=coverage.out
+
+      - name: Coverage Gate (>= 60%)
+        if: matrix.os != 'windows-latest'
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
+          echo "Coverage: ${COVERAGE}%"
+          if (( $(echo "$COVERAGE < 60" | bc -l) )); then
+            echo "Coverage too low: ${COVERAGE}% < 60%"
+            exit 1
+          fi
+          echo "Coverage check passed!"
+
+      - name: Coverage Gate - Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          $coverage = (go tool cover -func=coverage.out | Select-String "total" | ForEach-Object { $_ -replace '.*total\s+\d+\.\d+\s+(\d+\.\d+)%.*', '$1' })
+          Write-Host "Coverage: ${coverage}%"
+          $coverageValue = [double]$coverage
+          if ($coverageValue -lt 60) {
+            Write-Host "Coverage too low: ${coverage}% < 60%"
+            exit 1
+          }
+          Write-Host "Coverage check passed!"
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.out
+          fail_ci_if_error: true
 
       - name: Build
         run: go build ./cmd/newapi/
