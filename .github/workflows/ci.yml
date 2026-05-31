@@ -47,11 +47,15 @@ jobs:
 
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
+        shell: pwsh
         run: |
+          $content = Get-Content coverage.out -Raw
+          Write-Host "File exists and has $($content.Length) bytes"
+          $lines = $content -split "`n" | Where-Object { $_.Trim() -ne "" -and $_ -notlike "mode:*" }
           $totalStatements = 0
           $coveredStatements = 0
-          Get-Content coverage.out | Select-Object -Skip 1 | ForEach-Object {
-            $parts = $_ -split '\s+'
+          foreach ($line in $lines) {
+            $parts = $line -split '\s+'
             if ($parts.Count -ge 3) {
               $numStatements = [int]$parts[1]
               $execCount = [int]$parts[2]
@@ -60,6 +64,10 @@ jobs:
                 $coveredStatements += $numStatements
               }
             }
+          }
+          if ($totalStatements -eq 0) {
+            Write-Host "No coverage data found!"
+            exit 1
           }
           $coverage = [math]::Round(($coveredStatements / $totalStatements) * 100, 1)
           Write-Host "Coverage: ${coverage}%"
