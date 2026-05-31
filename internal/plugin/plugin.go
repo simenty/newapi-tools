@@ -26,27 +26,32 @@ type Plugin interface {
 }
 
 // Context provides runtime context to plugins.
-// Self-contained to avoid circular imports.
 type Context struct {
-	NewAPIHome       string
-	NewAPIPort       int
-	NewAPIDockerImg  string
-	NewAPIBackupDir  string
-	DockerComposeCmd string
-	Logger           *slog.Logger
-	HomeDir          string
+	NewAPIHome         string
+	NewAPIPort         int
+	NewAPIDockerImg    string
+	NewAPIBackupDir    string
+	NewAPIDomain       string
+	NewAPIHealthTimeout int
+	NewAPIMaxBackups   int
+	DockerComposeCmd   string
+	Logger             *slog.Logger
+	HomeDir            string
 }
 
 // NewContext creates a plugin Context from individual config values.
-func NewContext(home string, port int, dockerImg string, backupDir string, composeCmd string, logger *slog.Logger, homeDir string) Context {
+func NewContext(home string, port int, dockerImg string, backupDir string, domain string, healthTimeout int, maxBackups int, composeCmd string, logger *slog.Logger, homeDir string) Context {
 	return Context{
-		NewAPIHome:       home,
-		NewAPIPort:       port,
-		NewAPIDockerImg:  dockerImg,
-		NewAPIBackupDir:  backupDir,
-		DockerComposeCmd: composeCmd,
-		Logger:           logger,
-		HomeDir:          homeDir,
+		NewAPIHome:          home,
+		NewAPIPort:          port,
+		NewAPIDockerImg:     dockerImg,
+		NewAPIBackupDir:     backupDir,
+		NewAPIDomain:        domain,
+		NewAPIHealthTimeout: healthTimeout,
+		NewAPIMaxBackups:    maxBackups,
+		DockerComposeCmd:    composeCmd,
+		Logger:              logger,
+		HomeDir:             homeDir,
 	}
 }
 

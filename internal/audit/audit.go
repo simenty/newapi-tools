@@ -4,7 +4,6 @@ package audit
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -65,34 +64,29 @@ func (a *AuditLogger) Log(entry AuditEntry) error {
 
 	// Ensure the directory exists
 	if err := os.MkdirAll(filepath.Dir(a.path), 0755); err != nil {
-		slog.Warn("audit: failed to create directory", "path", filepath.Dir(a.path), "error", err)
 		return fmt.Errorf("audit: failed to create directory: %w", err)
 	}
 
 	// Rotate if needed
 	if err := a.rotate(); err != nil {
-		slog.Warn("audit: rotation failed", "error", err)
-		// Continue writing even if rotation fails
+		return fmt.Errorf("audit: rotation failed: %w", err)
 	}
 
 	// Marshal entry to JSON
 	data, err := json.Marshal(entry)
 	if err != nil {
-		slog.Warn("audit: failed to marshal entry", "error", err)
 		return fmt.Errorf("audit: failed to marshal entry: %w", err)
 	}
 
 	// Open file in append mode
 	f, err := os.OpenFile(a.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		slog.Warn("audit: failed to open log file", "path", a.path, "error", err)
 		return fmt.Errorf("audit: failed to open log file: %w", err)
 	}
 	defer f.Close()
 
 	// Write JSON line with newline
 	if _, err := f.Write(append(data, '\n')); err != nil {
-		slog.Warn("audit: failed to write entry", "error", err)
 		return fmt.Errorf("audit: failed to write entry: %w", err)
 	}
 

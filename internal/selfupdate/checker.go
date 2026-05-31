@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -56,13 +57,62 @@ func CheckLatest(ctx context.Context, repo string) (*ReleaseInfo, error) {
 	return &release, nil
 }
 
-// CompareVersions compares current version with latest version
-// Uses simple string comparison.
-// For pre-release tags like "v3.3.0-rc1", compares the base version for updates
-// and treats any pre-release suffix as a newer version than the base.
+// CompareVersions compares current version with latest version using semver logic.
+// Returns true if latest is strictly greater than current.
+// Pre-release versions (e.g. "v3.3.0-rc1") are always treated as older than the release version.
 func CompareVersions(current, latest string) (bool, error) {
-	// Strip leading 'v' prefix for comparison
-	cur := strings.TrimPrefix(current, "v")
-	lat := strings.TrimPrefix(latest, "v")
-	return cur != lat, nil
+	cur := parseSemver(current)
+	lat := parseSemver(latest)
+
+	if cur.major != lat.major {
+		return lat.major > cur.major, nil
+	}
+	if cur.minor != lat.minor {
+		return lat.minor > cur.minor, nil
+	}
+	if cur.patch != lat.patch {
+		return lat.patch > cur.patch, nil
+	}
+	// Same base version: pre-release is older than release
+	if cur.preRelease == "" && lat.preRelease != "" {
+		return false, nil // latest is pre-release of same version → not an update
+	}
+	if cur.preRelease != "" && lat.preRelease == "" {
+		return true, nil // current is pre-release, latest is release → update
+	}
+	// Both are pre-release: compare pre-release strings
+	return lat.preRelease > cur.preRelease, nil
+}
+
+// semver represents a parsed semantic version.
+type semver struct {
+	major      int
+	minor      int
+	patch      int
+	preRelease string // e.g. "rc1", "dev", "alpha"
+}
+
+// parseSemver parses a version string like "v3.2.0" or "v3.2.0-rc1".
+// Returns zero semver on parse failure.
+func parseSemver(v string) semver {
+	s := strings.TrimPrefix(v, "v")
+
+	// Split pre-release suffix
+	parts := strings.SplitN(s, "-", 2)
+	preRelease := ""
+	if len(parts) == 2 {
+		preRelease = parts[1]
+	}
+
+	// Parse major.minor.patch
+	nums := strings.SplitN(parts[0], ".", 3)
+	if len(nums) != 3 {
+		return semver{}
+	}
+
+	major, _ := strconv.Atoi(nums[0])
+	minor, _ := strconv.Atoi(nums[1])
+	patch, _ := strconv.Atoi(nums[2])
+
+	return semver{major: major, minor: minor, patch: patch, preRelease: preRelease}
 }

@@ -27,6 +27,7 @@ const (
 	CodeInstanceExists   = "I003" // 实例名已存在
 	CodeInstanceNotFound = "I004" // 实例不存在
 	CodeInstanceActive   = "I005" // 实例为当前活跃实例，无法删除
+	CodeDoctorFailed     = "X001" // 诊断检查失败
 )
 
 // AppError represents a structured application error with a code, message, and suggestion.

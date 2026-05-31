@@ -38,13 +38,13 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 		return nil, fmt.Errorf("check latest: %w", err)
 	}
 
-	// Resolve asset name for current OS/ARCH
-	assetName := resolveAssetName()
+	// Resolve asset name for current OS/ARCH with version from release
+	assetName := resolveAssetName(release.TagName)
 
-	// Find matching asset (prefix match for versioned names)
+	// Find matching asset
 	var asset *Asset
 	for _, a := range release.Assets {
-		if assetMatches(a.Name, assetName) {
+		if a.Name == assetName {
 			asset = &a
 			break
 		}
@@ -271,10 +271,9 @@ func backupAndReplace(currentBin, newBin, backupDir string) (string, error) {
 	return backupPath, nil
 }
 
-// resolveAssetName resolves the download filename based on current GOOS/GOARCH.
-// Matches goreleaser's name_template: {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
-// Since version is unknown at asset resolution time, we do a prefix match in Run().
-func resolveAssetName() string {
+// resolveAssetName resolves the download filename based on current GOOS/GOARCH and version.
+// Matches goreleaser's name_template: {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}.{{ .Extension }}
+func resolveAssetName(version string) string {
 	osName := runtime.GOOS
 	archName := runtime.GOARCH
 
@@ -296,11 +295,10 @@ func resolveAssetName() string {
 		archName = "amd64" // Default to amd64
 	}
 
-	return fmt.Sprintf("newapi-tools_%s_%s", osName, archName)
-}
+	ext := "tar.gz"
+	if runtime.GOOS == "windows" {
+		ext = "zip"
+	}
 
-// assetMatches checks if an asset name matches the desired platform.
-// Uses prefix matching to handle version strings in the name.
-func assetMatches(assetName, prefix string) bool {
-	return strings.HasPrefix(assetName, prefix)
+	return fmt.Sprintf("newapi-tools_%s_%s_%s.%s", version, osName, archName, ext)
 }
