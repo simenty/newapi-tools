@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/simenty/newapi-tools/internal/core"
 	"github.com/simenty/newapi-tools/internal/plugin"
 )
 
@@ -160,11 +161,11 @@ func TestNewAPIPluginName(t *testing.T) {
 	}
 }
 
-// TestNewAPIPluginVersion verifies the plugin version.
+// TestNewAPIPluginVersion verifies the plugin version matches core.Version.
 func TestNewAPIPluginVersion(t *testing.T) {
 	p := &NewAPIPlugin{}
-	if p.Version() != "3.1.0" {
-		t.Errorf("expected version '3.1.0', got '%s'", p.Version())
+	if p.Version() != core.Version {
+		t.Errorf("expected version '%s', got '%s'", core.Version, p.Version())
 	}
 }
 
@@ -229,8 +230,8 @@ func TestNewAPIPluginRegisteredInGlobalRegistry(t *testing.T) {
 	if p.Name() != "newapi" {
 		t.Errorf("expected registered plugin name 'newapi', got '%s'", p.Name())
 	}
-	if p.Version() != "3.1.0" {
-		t.Errorf("expected registered plugin version '3.1.0', got '%s'", p.Version())
+	if p.Version() != core.Version {
+		t.Errorf("expected registered plugin version '%s', got '%s'", core.Version, p.Version())
 	}
 }
 
@@ -241,7 +242,7 @@ func TestNewAPIPluginAllRegistry(t *testing.T) {
 	if !ok {
 		t.Fatal("expected 'newapi' in plugin.All()")
 	}
-	if p.Version() != "3.1.0" {
-		t.Errorf("expected version '3.1.0', got '%s'", p.Version())
+	if p.Version() != core.Version {
+		t.Errorf("expected version '%s', got '%s'", core.Version, p.Version())
 	}
 }

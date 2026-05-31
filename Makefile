@@ -5,9 +5,9 @@ BUILD_DIR    ?= ./dist
 VERSION      ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo v3.0.0-dev)
 GIT_COMMIT   ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 BUILD_DATE   ?= $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
-LDFLAGS      := -X github.com/Bonus520/newapi-tools/internal/core.Version=$(VERSION) \
-                -X github.com/Bonus520/newapi-tools/internal/core.GitCommit=$(GIT_COMMIT) \
-                -X github.com/Bonus520/newapi-tools/internal/core.BuildDate=$(BUILD_DATE)
+LDFLAGS      := -X github.com/simenty/newapi-tools/internal/core.Version=$(VERSION) \
+                -X github.com/simenty/newapi-tools/internal/core.GitCommit=$(GIT_COMMIT) \
+                -X github.com/simenty/newapi-tools/internal/core.BuildDate=$(BUILD_DATE)
 
 .PHONY: build clean test run lint fmt vet coverage install release snapshot check i18n-extract docs
 

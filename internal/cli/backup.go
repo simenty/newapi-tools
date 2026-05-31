@@ -181,7 +181,19 @@ func dumpMySQL(ctx context.Context, dstPath string) error {
 		"mysqldump", "--no-tablespaces", "-u", "root",
 	}
 	if password != "" {
-		args = append(args, "--password="+password)
+		// Use MYSQL_PWD env variable instead of --password= flag
+		// to avoid exposing password in /proc/PID/cmdline
+		args = append(args, "newapi")
+		cmd := exec.CommandContext(ctx, dockerPath, args...)
+		cmd.Env = append(os.Environ(), "MYSQL_PWD="+password)
+		cmd.Stdout = f
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			os.Remove(dstPath)
+			return fmt.Errorf("mysqldump failed: %w", err)
+		}
+		return nil
 	}
 	args = append(args, "newapi")
 

@@ -69,10 +69,8 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("instance not found, please create it first with 'newapi-tools instance add %s", instanceName)
 		}
-		// Apply instance settings from the instance's config
-		cfg.NewAPI.Home = inst.Home
-		cfg.NewAPI.Port = inst.Port
-		cfg.NewAPI.DockerImage = inst.DockerImage
+		// Use shared sync function to apply instance settings
+		syncInstanceToConfig(inst, cfg)
 	}
 
 	// Apply CLI flag overrides

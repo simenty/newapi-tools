@@ -16,9 +16,9 @@ import (
 
 // SelfUpdateOptions configures the self-update process
 type SelfUpdateOptions struct {
-	CurrentBinary string // Path to current binary (os.Executable())
-	Repo          string // GitHub repo name "owner/repo"
-	BackupDir     string // Backup directory (default ~/.config/newapi-tools/backups/)
+	CurrentBinary string                          // Path to current binary (os.Executable())
+	Repo          string                          // GitHub repo name "owner/repo"
+	BackupDir     string                          // Backup directory (default ~/.config/newapi-tools/backups/)
 	OnProgress    func(stage string, pct float64) // Progress callback
 }
 
@@ -41,10 +41,10 @@ func Run(ctx context.Context, opts SelfUpdateOptions) (*SelfUpdateResult, error)
 	// Resolve asset name for current OS/ARCH
 	assetName := resolveAssetName()
 
-	// Find matching asset
+	// Find matching asset (prefix match for versioned names)
 	var asset *Asset
 	for _, a := range release.Assets {
-		if a.Name == assetName {
+		if assetMatches(a.Name, assetName) {
 			asset = &a
 			break
 		}
@@ -175,13 +175,17 @@ func verifySHA256(ctx context.Context, filePath string, asset *Asset) error {
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		fmt.Printf("Warning: SHA256 checksum file not available (status: %d)\n", resp.StatusCode)
+	if err != nil {
+		fmt.Println("Warning: SHA256 checksum unavailable, skipping verification")
 		fmt.Printf("SHA256: %s\n", calculatedHash)
 		fmt.Println("Continuing without verification...")
-		if resp != nil {
-			resp.Body.Close()
-		}
+		return nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		fmt.Printf("Warning: SHA256 file not available (HTTP %d)\n", resp.StatusCode)
+		fmt.Printf("SHA256: %s\n", calculatedHash)
+		fmt.Println("Continuing without verification...")
 		return nil
 	}
 	defer resp.Body.Close()
@@ -267,7 +271,9 @@ func backupAndReplace(currentBin, newBin, backupDir string) (string, error) {
 	return backupPath, nil
 }
 
-// resolveAssetName resolves the download filename based on current GOOS/GOARCH
+// resolveAssetName resolves the download filename based on current GOOS/GOARCH.
+// Matches goreleaser's name_template: {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+// Since version is unknown at asset resolution time, we do a prefix match in Run().
 func resolveAssetName() string {
 	osName := runtime.GOOS
 	archName := runtime.GOARCH
@@ -290,5 +296,11 @@ func resolveAssetName() string {
 		archName = "amd64" // Default to amd64
 	}
 
-	return fmt.Sprintf("newapi-%s-%s", osName, archName)
+	return fmt.Sprintf("newapi-tools_%s_%s", osName, archName)
+}
+
+// assetMatches checks if an asset name matches the desired platform.
+// Uses prefix matching to handle version strings in the name.
+func assetMatches(assetName, prefix string) bool {
+	return strings.HasPrefix(assetName, prefix)
 }

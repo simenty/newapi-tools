@@ -18,7 +18,11 @@ type Store struct {
 }
 
 // NewStore creates a Store backed by the given file path.
+// If path is empty, DefaultStorePath() is used.
 func NewStore(path string) *Store {
+	if path == "" {
+		path = DefaultStorePath()
+	}
 	return &Store{path: path}
 }
 
@@ -191,7 +195,7 @@ func (s *Store) Update(name string, updateFn func(*Instance)) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	instances, err := s.LoadWithoutLock() // we already hold the lock
+	instances, err := s.loadLocked()
 	if err != nil {
 		return err
 	}
@@ -209,11 +213,11 @@ func (s *Store) Update(name string, updateFn func(*Instance)) error {
 		return apperr.New(apperr.CodeInstanceNotFound, fmt.Sprintf("实例 '%s' 不存在", name), "", nil)
 	}
 
-	return s.SaveWithoutLock(instances) // we still hold the lock
+	return s.saveLocked(instances)
 }
 
-// LoadWithoutLock loads instances without acquiring the lock (for internal use).
-func (s *Store) LoadWithoutLock() ([]Instance, error) {
+// loadLocked loads instances without acquiring the lock (caller must hold s.mu).
+func (s *Store) loadLocked() ([]Instance, error) {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -229,8 +233,8 @@ func (s *Store) LoadWithoutLock() ([]Instance, error) {
 	return instances, nil
 }
 
-// SaveWithoutLock saves instances without acquiring the lock (for internal use).
-func (s *Store) SaveWithoutLock(instances []Instance) error {
+// saveLocked saves instances without acquiring the lock (caller must hold s.mu).
+func (s *Store) saveLocked(instances []Instance) error {
 	data, err := json.MarshalIndent(instances, "", "  ")
 	if err != nil {
 		return apperr.Wrap(apperr.CodeConfigLoad, "", fmt.Errorf("marshal instances: %w", err))

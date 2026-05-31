@@ -4,6 +4,7 @@ package i18n
 import (
 	"embed"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -91,6 +92,7 @@ func Init(lang string) error {
 // Supports fmt.Sprintf-style placeholders via args.
 func T(key string, args ...any) string {
 	if defaultBundle == nil {
+		slog.Warn("i18n: default bundle not initialized, T() called before Init()", "key", key)
 		return key
 	}
 	return defaultBundle.T(key, args...)

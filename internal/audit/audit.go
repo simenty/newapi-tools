@@ -57,8 +57,8 @@ func NewAuditLogger(path string) *AuditLogger {
 
 // Log writes an AuditEntry as a JSON line to the audit log file.
 // It performs rotation before writing if the file exceeds maxSize.
-// If writing fails, the error is logged via slog.Warn but not returned to the caller,
-// so that audit logging failures do not affect command execution.
+// If writing fails, the error is returned to the caller so the caller can decide
+// whether to treat audit failures as fatal.
 func (a *AuditLogger) Log(entry AuditEntry) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()

@@ -7,17 +7,21 @@ import (
 	"os/user"
 	"runtime"
 	"strings"
+
+	"github.com/simenty/newapi-tools/internal/apperr"
 )
 
 // MaskSecret masks sensitive strings for safe display.
 // Strings shorter than 6 characters are fully masked as "****".
-// Strings 6+ characters keep the first 2 and last 2 characters, with "****" in between.
+// Strings 6+ characters keep the first 2 and last 2 runes, with "****" in between.
+// Uses []rune to correctly handle multi-byte characters (e.g. Chinese, emoji).
 // Example: "mysecretpassword" → "my****rd"
 func MaskSecret(s string) string {
-	if len(s) < 6 {
+	r := []rune(s)
+	if len(r) < 6 {
 		return "****"
 	}
-	return s[:2] + "****" + s[len(s)-2:]
+	return string(r[:2]) + "****" + string(r[len(r)-2:])
 }
 
 // CheckConfigPerm checks whether a configuration file has overly permissive access.
@@ -33,12 +37,13 @@ func CheckConfigPerm(path string) error {
 		if os.IsNotExist(err) {
 			return nil // File doesn't exist yet, no permission issue
 		}
-		return fmt.Errorf("failed to check config permissions: %w", err)
+		return apperr.Wrap(apperr.CodeConfigLoad, "", err)
 	}
 
 	perm := info.Mode().Perm()
 	if perm&0077 != 0 {
-		return fmt.Errorf("config file %s has overly permissive permissions (%04o); recommend chmod 600", path, perm)
+		return apperr.New(apperr.CodeConfigPerm,
+			fmt.Sprintf("config file %s has overly permissive permissions (%04o)", path, perm), "", nil)
 	}
 	return nil
 }
@@ -53,7 +58,7 @@ func FixConfigPerm(path string) error {
 		return nil
 	}
 	if err := os.Chmod(path, 0600); err != nil {
-		return fmt.Errorf("failed to chmod 600 %s: %w", path, err)
+		return apperr.New(apperr.CodeConfigPerm, fmt.Sprintf("failed to chmod 600 %s: %v", path, err), "", nil)
 	}
 	return nil
 }
@@ -68,12 +73,12 @@ func CheckDockerGroup() (bool, error) {
 
 	currentUser, err := user.Current()
 	if err != nil {
-		return false, fmt.Errorf("failed to get current user: %w", err)
+		return false, apperr.Wrap(apperr.CodeInstallFailed, "", err)
 	}
 
 	groupIDs, err := currentUser.GroupIds()
 	if err != nil {
-		return false, fmt.Errorf("failed to get user groups: %w", err)
+		return false, apperr.Wrap(apperr.CodeInstallFailed, "", err)
 	}
 
 	for _, gid := range groupIDs {

@@ -259,19 +259,19 @@ func performRestore(ctx context.Context, cfg *core.Config, backupPath string) er
 	ui.L().Info("restoring backup", "file", backupPath)
 
 	// Step 1: Stop running containers
-	ui.PrintStep(1, 2, "Stopping containers...")
+	ui.PrintStep(1, 3, "Stopping containers...")
 	if err := docker.ComposeDown(ctx, cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
 		ui.L().Warn("compose down failed during restore", "error", err)
 	}
 
 	// Step 2: Extract backup archive
-	ui.PrintStep(2, 2, "Extracting backup...")
+	ui.PrintStep(2, 3, "Extracting backup...")
 	if err := extractTarArchive(backupPath, cfg.NewAPI.Home); err != nil {
 		return err
 	}
 
 	// Step 3: Restart containers
-	ui.PrintStep(3, 2, "Restarting containers...")
+	ui.PrintStep(3, 3, "Restarting containers...")
 	if err := docker.ComposeUp(ctx, cfg.NewAPI.Home, cfg.Docker.ComposeCmd); err != nil {
 		return err
 	}
@@ -284,7 +284,7 @@ func composeUpForceRecreate(ctx context.Context, projectDir, composeCmd string) 
 	if composeCmd == "" {
 		composeCmd = "docker compose"
 	}
-	parts := strings.Split(composeCmd, " ")
+	parts := strings.Fields(composeCmd)
 	args := append(parts, "-f", projectDir+"/docker-compose.yml", "up", "-d", "--force-recreate")
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Dir = projectDir

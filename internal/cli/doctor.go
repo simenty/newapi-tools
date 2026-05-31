@@ -210,7 +210,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	)
 
 	if failCount > 0 {
-		return apperr.New(apperr.CodeDockerNotFound, fmt.Sprintf("%d 项诊断检查失败", failCount), "", nil)
+		return apperr.New(apperr.CodeInstallFailed, fmt.Sprintf("%d 项诊断检查失败", failCount), "", nil)
 	}
 	return nil
 }

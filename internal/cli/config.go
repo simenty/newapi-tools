@@ -226,6 +226,11 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Validate configuration before persisting
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	// Determine config file path
 	configFile := core.ConfigFileUsed()
 	if configFile == "" {
@@ -374,6 +379,11 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+	// Validate configuration before persisting
+	if err := cfg.Validate(); err != nil {
+		return fmt.Errorf("invalid configuration: %w", err)
+	}
+
 	// Write
 	configFile := core.ConfigFileUsed()
 	if configFile == "" {
@@ -387,14 +397,16 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	// If we have an active instance, also update it in the store
 	if cfg.Instance.Active != "" {
 		store := instance.NewStore("")
-		store.Update(cfg.Instance.Active, func(inst *instance.Instance) {
+		if err := store.Update(cfg.Instance.Active, func(inst *instance.Instance) {
 			inst.Home = cfg.NewAPI.Home
 			inst.Port = cfg.NewAPI.Port
 			inst.DockerImage = cfg.NewAPI.DockerImage
 			inst.Domain = cfg.NewAPI.Domain
 			inst.HealthTimeout = cfg.NewAPI.HealthTimeout
 			inst.MaxBackups = cfg.NewAPI.MaxBackups
-		})
+		}); err != nil {
+			ui.L().Warn("failed to update instance configuration", "instance", cfg.Instance.Active, "error", err)
+		}
 	}
 
 	fmt.Printf("Configuration saved to %s\n", configFile)

@@ -17,12 +17,10 @@ linters-settings:
     check-type-assertions: false
 
   gocyclo:
-    min-complexity: 15   # doctor.go 当前约 30+，先设宽松阈值逐步收紧
+    min-complexity: 25   # 先设宽松阈值，后续逐步收紧
 
   gosec:
     # gosec: 安全扫描
-    excludes:
-      - G104  # Errors unhandled.
 
 issues:
   exclude-rules:

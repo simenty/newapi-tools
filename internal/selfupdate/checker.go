@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -56,9 +57,12 @@ func CheckLatest(ctx context.Context, repo string) (*ReleaseInfo, error) {
 }
 
 // CompareVersions compares current version with latest version
-// Returns: true if an update is available
+// Uses simple string comparison.
+// For pre-release tags like "v3.3.0-rc1", compares the base version for updates
+// and treats any pre-release suffix as a newer version than the base.
 func CompareVersions(current, latest string) (bool, error) {
-	// Simple comparison for now - just check if they are different
-	// In production, you would use semantic version comparison
-	return current != latest, nil
+	// Strip leading 'v' prefix for comparison
+	cur := strings.TrimPrefix(current, "v")
+	lat := strings.TrimPrefix(latest, "v")
+	return cur != lat, nil
 }

@@ -19,6 +19,21 @@ type Config struct {
 	Instance InstanceConfig `mapstructure:"instance"`
 }
 
+// Validate checks all configuration fields for valid values.
+// Returns a descriptive error if any value is out of range.
+func (cfg *Config) Validate() error {
+	if cfg.NewAPI.Port < 1 || cfg.NewAPI.Port > 65535 {
+		return fmt.Errorf("invalid port %d: must be between 1 and 65535", cfg.NewAPI.Port)
+	}
+	if cfg.NewAPI.HealthTimeout < 0 {
+		return fmt.Errorf("invalid health_timeout %d: must be non-negative", cfg.NewAPI.HealthTimeout)
+	}
+	if cfg.NewAPI.MaxBackups < 0 {
+		return fmt.Errorf("invalid max_backups %d: must be non-negative", cfg.NewAPI.MaxBackups)
+	}
+	return nil
+}
+
 // NewAPIConfig holds new-api specific configuration.
 type NewAPIConfig struct {
 	Home          string `mapstructure:"home"`

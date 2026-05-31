@@ -9,6 +9,7 @@ package newapi
 import (
 	"fmt"
 
+	"github.com/simenty/newapi-tools/internal/core"
 	"github.com/simenty/newapi-tools/internal/plugin"
 )
 
@@ -21,7 +22,7 @@ type NewAPIPlugin struct{}
 var _ plugin.Plugin = (*NewAPIPlugin)(nil)
 
 func (p *NewAPIPlugin) Name() string    { return "newapi" }
-func (p *NewAPIPlugin) Version() string { return "3.1.0" }
+func (p *NewAPIPlugin) Version() string { return core.Version }
 
 func (p *NewAPIPlugin) Commands() []plugin.Command {
 	return []plugin.Command{
