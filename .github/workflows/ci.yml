@@ -48,22 +48,19 @@ jobs:
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
         run: |
-          $totalStmts = 0
-          $coveredStmts = 0
-          Get-Content coverage.out | Select-Object -Skip 1 | ForEach-Object {
-            $parts = $_ -split '\s+'
-            if ($parts.Count -ge 3) {
-              $numStmts = [int]$parts[$parts.Count - 2]
-              $count = [int]$parts[$parts.Count - 1]
-              $totalStmts += $numStmts
-              if ($count -gt 0) { $coveredStmts += $numStmts }
+          $totalPct = 0
+          $count = 0
+          go test ./... -count=1 -timeout 120s -cover 2>&1 | ForEach-Object {
+            if ($_ -match 'coverage:\s+([\d.]+)%') {
+              $totalPct += [double]$Matches[1]
+              $count++
             }
           }
-          if ($totalStmts -eq 0) {
-            Write-Host "ERROR: No coverage data found"
+          if ($count -eq 0) {
+            Write-Host "ERROR: Could not parse any coverage data"
             exit 1
           }
-          $coverage = [math]::Round($coveredStmts / $totalStmts * 100, 1)
+          $coverage = [math]::Round($totalPct / $count, 1)
           Write-Host "Coverage: ${coverage}%"
           if ($coverage -lt 20) {
             Write-Host "ERROR: Coverage too low: ${coverage}% < 20%"
