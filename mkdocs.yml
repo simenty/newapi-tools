@@ -49,11 +49,13 @@ nav:
   - 命令参考:
     - install: commands/install.md
     - status: commands/status.md
+    - audit: commands/audit.md
     - backup: commands/backup.md
     - restore: commands/restore.md
     - update: commands/update.md
     - doctor: commands/doctor.md
     - config: commands/config.md
+    - instance: commands/instance.md
     - mirror: commands/mirror.md
     - version: commands/version.md
   - 镜像加速: guide/mirror.md
@@ -65,23 +67,3 @@ plugins:
       redirect_maps: {}
 
 exclude_docs: |
-  README.md
-  ARCHITECTURE-DESIGN-V2-V3.md
-  AUDIT-REPORT-V2.0.8.md
-  AUDIT-REPORT-V2.0.9.md
-  IMPROVEMENT-PLAN-V2.x.md
-  PRD-ARCHITECTURE-V2-V3.md
-  PRODUCT-POSITIONING.md
-  QUICK-START-30S.md
-  ROADMAP-V2.x.md
-  ROADMAP-V3.0-GO.md
-  ROADMAP-V3.0.md
-  audit-report-v2.0.6.md
-  audit-report-v2.0.7.md
-  installation-guide.md
-  multi-platform-support.md
-  optimization-log-v2.0.md
-  test-report-v2.0.1.md
-  user-guide.md
-  v2-optimization-plan-v2.0.md
-  v2-optimization-plan.md

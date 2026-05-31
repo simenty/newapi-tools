@@ -13,9 +13,6 @@ import (
 	"time"
 )
 
-// dockerSocketPath is the default Docker daemon socket path.
-const dockerSocketPath = "/var/run/docker.sock"
-
 // windowsPipePath is the default Docker named pipe path on Windows.
 const windowsPipePath = `\\.\pipe\docker_engine`
 
