@@ -1,14 +1,45 @@
-<div align="right">
-  <a href="README.md">🇨🇳 中文</a> | <a href="README_EN.md">🇬🇧 English</a>
+<div align="center">
+  <h1>🛠 NewAPI Tools</h1>
+  <p>Docker management platform for <a href="https://github.com/Calcium-Ion/new-api">new-api</a></p>
+
+  <p>
+    <a href="https://github.com/simenty/newapi-tools/blob/main/LICENSE">
+      <img src="https://img.shields.io/github/license/simenty/newapi-tools?style=flat-square" alt="License">
+    </a>
+    <a href="https://github.com/simenty/newapi-tools/releases">
+      <img src="https://img.shields.io/github/v/release/simenty/newapi-tools?style=flat-square" alt="Release">
+    </a>
+    <a href="https://github.com/simenty/newapi-tools/actions/workflows/ci.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/simenty/newapi-tools/ci.yml?style=flat-square&label=CI" alt="CI">
+    </a>
+    <a href="https://github.com/simenty/newapi-tools/actions/workflows/release.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/simenty/newapi-tools/release.yml?style=flat-square&label=Release" alt="Release">
+    </a>
+    <a href="https://goreportcard.com/report/github.com/simenty/newapi-tools">
+      <img src="https://goreportcard.com/badge/github.com/simenty/newapi-tools?style=flat-square" alt="Go Report Card">
+    </a>
+    <img src="https://img.shields.io/github/go-mod/go-version/simenty/newapi-tools?style=flat-square" alt="Go Version">
+  </p>
+
+  <p>
+    <a href="README.md">🇨🇳 中文</a> · <a href="README_EN.md">🇬🇧 English</a>
+  </p>
 </div>
 
-# NewAPI Tools V3.4
+<br>
 
-Docker management platform for [new-api](https://github.com/Calcium-Ion/new-api), rewritten in Go.
+<p align="center">
+  <a href="#-quick-start">🚀 Quick Start</a> ·
+  <a href="#-commands">📋 Commands</a> ·
+  <a href="#-project-structure">📁 Structure</a> ·
+  <a href="#-configuration">⚙️ Config</a> ·
+  <a href="#-development">🔧 Dev</a> ·
+  <a href="#-version-history">📜 History</a>
+</p>
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 ```bash
 # Build
@@ -23,10 +54,6 @@ make build
 # Run diagnostics
 ./dist/newapi-tools doctor
 
-# View / edit configuration
-./dist/newapi-tools config
-./dist/newapi-tools config set newapi.port 8080
-
 # Speed up image pulls (China mainland)
 ./dist/newapi-tools mirror add tuna
 
@@ -36,28 +63,30 @@ make build
 
 ---
 
-## Commands
+## 📋 Commands
 
 | Command | Description |
 |---------|-------------|
-| `install` | Deploy new-api with Docker Compose (interactive wizard with `--interactive`) |
+| `install` | Deploy new-api with Docker Compose (`--interactive` for wizard) |
 | `status` / `ls` | Show container status. `--json` for JSON, `--instance <name>` for multi-instance |
 | `backup` | Backup configs, MySQL dump, data dir to `.tar.gz` |
-| `restore` | Restore from backup. `--file latest` to auto-pick newest |
-| `update` | Update Docker image; `--self` to update CLI binary; `--check` to inspect |
+| `restore` | Restore from backup. `--file latest` auto-picks newest |
+| `update` | Update Docker image; `--self` updates CLI; `--check` inspects only |
 | `doctor` | 12 diagnostic checks. `--fix` auto-repair, `--verbose` for detail |
-| `config` | Config management: `set`, `init` (wizard), `chmod` (secure permissions) |
+| `config` | Config management: `set`, `init` (wizard), `chmod` (secure perms) |
 | `mirror` | Docker registry mirror management |
 | `instance` | Multi-instance management: `add`, `list`, `switch`, `remove` |
 | `audit` | Audit log query: `list --last N`, `--cmd`, `--since`, `--json` |
 | `version` | Print version and build info |
 
-### Examples
+<details>
+<summary><b>📖 Usage Examples (click to expand)</b></summary>
 
 ```bash
 # Install
 newapi-tools install --port 8080
 newapi-tools install --domain newapi.example.com --mirror tuna
+newapi-tools install --interactive
 
 # Backup & Restore
 newapi-tools backup
@@ -94,17 +123,19 @@ newapi-tools mirror test tuna aliyun
 newapi-tools mirror add tuna
 newapi-tools mirror apply
 ```
+</details>
 
-Built-in mirrors: `tuna`, `aliyun`, `ustc`, `163`, `azure`, `daocloud`
+> **Built-in mirrors**: `tuna`, `aliyun`, `ustc`, `163`, `azure`, `daocloud`
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 newapi-tools/
-├── cmd/newapi/          # Entry point (main.go)
-├── cmd/gendocs/         # Error code doc generator
+├── cmd/
+│   ├── newapi/          # Entry point (main.go)
+│   └── gendocs/         # Error code doc generator
 ├── internal/
 │   ├── apperr/          # Structured error codes & suggestions
 │   ├── audit/           # Audit logging (JSON Lines + ring buffer query)
@@ -119,7 +150,7 @@ newapi-tools/
 │   ├── security/        # Permissions checking & fixing
 │   ├── selfupdate/      # CLI self-update (GitHub Releases)
 │   └── ui/              # Output formatting (table, logger, progress)
-├── plugins/newapi/      # newapi Shell plugin (metadata.yml + scripts/)
+├── plugins/newapi/      # newapi Shell plugin
 ├── configs/             # Default config files
 ├── docs/                # MkDocs documentation site
 └── .github/workflows/   # CI + Release + Docs automation
@@ -127,9 +158,9 @@ newapi-tools/
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-Default: `~/.config/newapi-tools/newapi-tools.yml`
+Default path: `~/.config/newapi-tools/newapi-tools.yml`
 
 ```yaml
 newapi:
@@ -140,19 +171,17 @@ newapi:
   domain: ""                 # Custom domain (optional)
   health_timeout: 120        # Health check timeout (seconds)
   max_backups: 10            # Max backups to keep
-
 docker:
   compose_cmd: "docker compose"
-
 log:
   level: info                # debug | info | warn | error
   format: text               # text | json
-
 instance:
   active: ""                 # Current active instance name
 ```
 
 Override via CLI flags:
+
 ```bash
 newapi-tools config set newapi.port 8080
 newapi-tools config init
@@ -162,7 +191,7 @@ newapi-tools --config /path/to/config.yml status
 
 ---
 
-## Development
+## 🔧 Development
 
 ```bash
 make build    # Build → dist/newapi-tools
@@ -172,25 +201,26 @@ make lint     # golangci-lint
 make vet      # go vet ./...
 make coverage # Generate test coverage report
 make docs     # Generate error code docs
+make check    # vet + test
 ```
 
-### Running Tests
+<details>
+<summary><b>📋 Testing & Cross-compile (click to expand)</b></summary>
 
 ```bash
+# Run tests
 go test ./...                  # All packages
 go test ./internal/cli/ -v     # CLI only
 go test ./... -count=1         # No cache
-```
 
-### Cross-compile for Linux
-
-```bash
+# Cross-compile for Linux
 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o dist/newapi-tools-linux-amd64 ./cmd/newapi/
 ```
+</details>
 
 ---
 
-## Plugin System
+## 🔌 Plugin System
 
 Plugins discovered from `./plugins/` at startup:
 
@@ -201,25 +231,36 @@ The bundled `plugins/newapi/` plugin provides 7 shell script commands, with `ins
 
 ---
 
-## Version History
+## 📜 Version History
 
 | Version | Highlights |
 |---------|-----------|
-| V3.4.0  | Audit report fixes: cross-partition EXDEV fallback, `--json` uses `encoding/json`, audit ring buffer, CI docs check |
-| V3.3.5  | Fix resolveAssetName semver comparison, doctor error code X001, audit double logging |
-| V3.3.4  | Security audit: path traversal fix, permission lockdown, shell injection prevention, race condition fixes |
-| V3.3.0  | Domain/MaxBackups config, `Check` struct refactor, auto-rollback |
-| V3.2.0  | Self-update (`--check`/`--self`), Audit log query, Multi-instance management, Error code docs |
-| V3.1.0  | i18n framework, structured error handling, audit logging, security checks, interactive install wizard |
-| V3.0.0  | mirror command, 6 built-in CN mirrors, 83 tests |
-| V3.0-rc | 9 Go-native commands, 78 tests, Git v2/main split |
-| V3.0-a3 | install + status Go-native, newapi Shell plugin, 52 tests |
-| V3.0-a2 | Plugin system, Registry, Docker wrapper, OS adapter |
-| V3.0-a1 | Go project skeleton, Cobra CLI, Viper config, slog |
-| V2.4    | Shell V2 plugin system (archived on `v2` branch) |
+| **V3.4.0** | Audit fixes (EXDEV fallback, `encoding/json` output, ring buffer, CI docs check) |
+| **V3.3.5** | Fix resolveAssetName, semver compare, doctor error code X001 |
+| **V3.3.4** | Security audit: path traversal fix, permission lockdown, shell injection prevention |
+| **V3.3.0** | Domain/MaxBackups config, `Check` struct refactor, auto-rollback |
+| **V3.2.0** | Self-update (`--check`/`--self`), audit log query, multi-instance, error code docs |
+| **V3.1.0** | i18n framework, structured error handling, audit logging, security checks |
+| **V3.0.0** | Mirror management, 6 built-in CN mirrors, 83 tests |
+| **V2.4** | Shell V2 plugin system (archived on `v2` branch) |
 
 ---
 
-## License
+## 📄 License
 
-MIT
+[MIT](LICENSE)
+
+---
+
+<p align="center">
+  <a href="#-quick-start">🚀 Quick Start</a> ·
+  <a href="#-commands">📋 Commands</a> ·
+  <a href="#-project-structure">📁 Structure</a> ·
+  <a href="#-configuration">⚙️ Config</a> ·
+  <a href="#-development">🔧 Dev</a> ·
+  <a href="#-version-history">📜 History</a>
+</p>
+
+<p align="center">
+  <a href="README.md">🇨🇳 中文版本 →</a>
+</p>
