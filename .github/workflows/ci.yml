@@ -48,28 +48,28 @@ jobs:
       - name: Coverage Gate - Windows
         if: matrix.os == 'windows-latest'
         run: |
-          $output = & go tool cover -func=coverage.out 2>&1 | Out-String
-          Write-Host "Raw output:"
-          Write-Host $output
-          $lines = $output -split "`r`n|`n"
-          $totalLine = $lines | Where-Object { $_ -match "total" }
-          if (-not $totalLine) {
-            Write-Host "ERROR: Could not find total line in coverage output"
+          try {
+            $output = & go tool cover -func=coverage.out
+            $totalLine = $output | Where-Object { $_ -match "total" }
+            if (-not $totalLine) {
+              Write-Host "Raw output: $output"
+              throw "Could not find total coverage line"
+            }
+            Write-Host "Total line: $totalLine"
+            $match = [regex]::Match($totalLine, "(\d+\.?\d*)%")
+            if (-not $match.Success) {
+              throw "Could not parse coverage percentage"
+            }
+            $coverage = [double]$match.Groups[1].Value
+            Write-Host "Coverage: ${coverage}%"
+            if ($coverage -lt 20) {
+              throw "Coverage too low: ${coverage}% < 20%"
+            }
+            Write-Host "Coverage check passed!"
+          } catch {
+            Write-Host "ERROR: $_"
             exit 1
           }
-          Write-Host "Total line: $totalLine"
-          $match = [regex]::Match($totalLine, "(\d+\.?\d*)%")
-          if (-not $match.Success) {
-            Write-Host "ERROR: Could not parse coverage percentage"
-            exit 1
-          }
-          $coverage = [double]$match.Groups[1].Value
-          Write-Host "Coverage: ${coverage}%"
-          if ($coverage -lt 20) {
-            Write-Host "ERROR: Coverage too low: ${coverage}% < 20%"
-            exit 1
-          }
-          Write-Host "Coverage check passed!"
 
       - name: Upload Coverage
         uses: codecov/codecov-action@v5
