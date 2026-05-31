@@ -2,9 +2,11 @@
 package plugin
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"time"
 )
 
 // ShellPlugin implements the Plugin interface by delegating to shell scripts.
@@ -65,6 +67,7 @@ func (p *ShellPlugin) Init(ctx Context) error {
 }
 
 // Execute runs the named command by invoking the corresponding shell script.
+// A 10-minute timeout is enforced to prevent runaway scripts.
 func (p *ShellPlugin) Execute(cmd string, args []string) error {
 	if !p.ready {
 		return fmt.Errorf("plugin %s is not initialized", p.meta.Name)
@@ -85,7 +88,10 @@ func (p *ShellPlugin) Execute(cmd string, args []string) error {
 		)
 	}
 
-	shellCmd := exec.Command("bash", scriptPath)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	shellCmd := exec.CommandContext(ctx, "bash", scriptPath)
 	shellCmd.Args = append(shellCmd.Args, args...)
 
 	// Pass configuration via environment variables

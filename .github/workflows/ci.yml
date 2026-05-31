@@ -6,9 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   test:
     name: Test
@@ -34,13 +31,13 @@ jobs:
       - name: Test with Coverage
         run: go test ./... -count=1 -timeout 120s -coverprofile=coverage.out
 
-      - name: Coverage Gate (>= 20%)
+      - name: Coverage Gate (>= 30%)
         if: matrix.os != 'windows-latest'
         run: |
           COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
           echo "Coverage: ${COVERAGE}%"
-          if (( $(echo "$COVERAGE < 20" | bc -l) )); then
-            echo "Coverage too low: ${COVERAGE}% < 20%"
+          if (( $(echo "$COVERAGE < 30" | bc -l) )); then
+            echo "Coverage too low: ${COVERAGE}% < 30%"
             exit 1
           fi
           echo "Coverage check passed!"
@@ -62,8 +59,8 @@ jobs:
           }
           $coverage = [math]::Round($totalPct / $count, 1)
           Write-Host "Coverage: ${coverage}%"
-          if ($coverage -lt 20) {
-            Write-Host "ERROR: Coverage too low: ${coverage}% < 20%"
+          if ($coverage -lt 30) {
+            Write-Host "ERROR: Coverage too low: ${coverage}% < 30%"
             exit 1
           }
           Write-Host "Coverage check passed!"
@@ -92,24 +89,3 @@ jobs:
 
       - name: Run golangci-lint
         run: golangci-lint run --timeout=5m ./...
-
-  release-snapshot:
-    name: Release Snapshot
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: [test]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-
-      - uses: goreleaser/goreleaser-action@v6
-        with:
-          version: '~> v2'
-          args: release --snapshot --clean
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

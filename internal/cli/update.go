@@ -281,13 +281,17 @@ func performRestore(ctx context.Context, cfg *core.Config, backupPath string) er
 
 // composeUpForceRecreate runs "docker compose up -d --force-recreate".
 func composeUpForceRecreate(ctx context.Context, projectDir, composeCmd string) error {
+	safeDir, err := filepath.Abs(filepath.Clean(projectDir))
+	if err != nil {
+		return fmt.Errorf("invalid project directory: %w", err)
+	}
 	if composeCmd == "" {
 		composeCmd = "docker compose"
 	}
 	parts := strings.Fields(composeCmd)
-	args := append(parts, "-f", projectDir+"/docker-compose.yml", "up", "-d", "--force-recreate")
+	args := append(parts, "-f", safeDir+"/docker-compose.yml", "up", "-d", "--force-recreate")
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Dir = projectDir
+	cmd.Dir = safeDir
 	cmd.Stdout = docker.ComposeStdout
 	cmd.Stderr = docker.ComposeStderr
 	if err := cmd.Run(); err != nil {

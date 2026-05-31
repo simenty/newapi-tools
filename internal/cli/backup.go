@@ -281,9 +281,9 @@ func createTarArchive(archivePath, srcDir string, compress bool) error {
 		if err != nil {
 			return err
 		}
-		defer fh.Close()
 
 		_, err = io.Copy(tw, fh)
+		fh.Close()
 		return err
 	})
 }

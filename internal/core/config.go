@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -89,6 +90,9 @@ var configInstance *Config
 // configFileUsed records which config file was actually loaded.
 var configFileUsed string
 
+// configMu protects concurrent access to configInstance and configFileUsed.
+var configMu sync.RWMutex
+
 // LoadConfig initializes Viper, reads config file, and returns the merged Config.
 // configFile is the explicit path from --config flag (may be empty).
 func LoadConfig(configFile string) (*Config, error) {
@@ -122,9 +126,13 @@ func LoadConfig(configFile string) (*Config, error) {
 			return nil, fmt.Errorf("failed to read config file: %w", err)
 		}
 		// Config file not found is acceptable — use defaults
+		configMu.Lock()
 		configFileUsed = ""
+		configMu.Unlock()
 	} else {
+		configMu.Lock()
 		configFileUsed = v.ConfigFileUsed()
+		configMu.Unlock()
 	}
 
 	// Unmarshal into Config struct
@@ -133,13 +141,17 @@ func LoadConfig(configFile string) (*Config, error) {
 		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
 	}
 
+	configMu.Lock()
 	configInstance = cfg
+	configMu.Unlock()
 	return cfg, nil
 }
 
 // GetConfig returns the currently loaded configuration.
 // Returns nil if LoadConfig has not been called.
 func GetConfig() *Config {
+	configMu.RLock()
+	defer configMu.RUnlock()
 	return configInstance
 }
 
@@ -174,6 +186,8 @@ func configDir() string {
 // ConfigFileUsed returns the path of the config file that was loaded.
 // Must be called after LoadConfig.
 func ConfigFileUsed() string {
+	configMu.RLock()
+	defer configMu.RUnlock()
 	return configFileUsed
 }
 
@@ -211,7 +225,7 @@ func WriteConfig(cfg *Config, path string) error {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}
 
-	if err := os.WriteFile(path, yamlData, 0644); err != nil {
+	if err := os.WriteFile(path, yamlData, 0600); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}
 	return nil

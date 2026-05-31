@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -16,14 +17,28 @@ type ServiceStatus struct {
 	Running bool
 }
 
+// safeProjectDir validates and cleans a project directory path to prevent command injection.
+func safeProjectDir(dir string) (string, error) {
+	clean := filepath.Clean(dir)
+	abs, err := filepath.Abs(clean)
+	if err != nil {
+		return "", fmt.Errorf("invalid project directory: %w", err)
+	}
+	return abs, nil
+}
+
 // ComposeUp starts the compose services in detached mode.
 // Uses exec.Command to call docker compose CLI.
 func (c *Client) ComposeUp(ctx context.Context, projectDir string) error {
+	safeDir, err := safeProjectDir(projectDir)
+	if err != nil {
+		return err
+	}
 	composeCmd := c.composeCmd
-	args := splitComposeCommand(composeCmd, "-f", projectDir+"/docker-compose.yml", "up", "-d")
+	args := splitComposeCommand(composeCmd, "-f", safeDir+"/docker-compose.yml", "up", "-d")
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Dir = projectDir
+	cmd.Dir = safeDir
 	cmd.Stdout = ComposeStdout
 	cmd.Stderr = ComposeStderr
 
@@ -35,11 +50,15 @@ func (c *Client) ComposeUp(ctx context.Context, projectDir string) error {
 
 // ComposeDown stops and removes the compose services.
 func (c *Client) ComposeDown(ctx context.Context, projectDir string) error {
+	safeDir, err := safeProjectDir(projectDir)
+	if err != nil {
+		return err
+	}
 	composeCmd := c.composeCmd
-	args := splitComposeCommand(composeCmd, "-f", projectDir+"/docker-compose.yml", "down")
+	args := splitComposeCommand(composeCmd, "-f", safeDir+"/docker-compose.yml", "down")
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Dir = projectDir
+	cmd.Dir = safeDir
 	cmd.Stdout = ComposeStdout
 	cmd.Stderr = ComposeStderr
 
@@ -51,11 +70,15 @@ func (c *Client) ComposeDown(ctx context.Context, projectDir string) error {
 
 // ComposePull pulls the latest images for the compose services.
 func (c *Client) ComposePull(ctx context.Context, projectDir string) error {
+	safeDir, err := safeProjectDir(projectDir)
+	if err != nil {
+		return err
+	}
 	composeCmd := c.composeCmd
-	args := splitComposeCommand(composeCmd, "-f", projectDir+"/docker-compose.yml", "pull")
+	args := splitComposeCommand(composeCmd, "-f", safeDir+"/docker-compose.yml", "pull")
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	cmd.Dir = projectDir
+	cmd.Dir = safeDir
 	cmd.Stdout = ComposeStdout
 	cmd.Stderr = ComposeStderr
 
@@ -67,8 +90,12 @@ func (c *Client) ComposePull(ctx context.Context, projectDir string) error {
 
 // ComposePs lists the status of compose services.
 func (c *Client) ComposePs(ctx context.Context, projectDir string) ([]ServiceStatus, error) {
+	safeDir, err := safeProjectDir(projectDir)
+	if err != nil {
+		return nil, err
+	}
 	composeCmd := c.composeCmd
-	args := splitComposeCommand(composeCmd, "-f", projectDir+"/docker-compose.yml", "ps", "--format", "json")
+	args := splitComposeCommand(composeCmd, "-f", safeDir+"/docker-compose.yml", "ps", "--format", "json")
 
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Dir = projectDir

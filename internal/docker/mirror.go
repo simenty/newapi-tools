@@ -65,7 +65,7 @@ func WriteDaemonJSON(cfg map[string]interface{}) error {
 	if _, err := os.Stat(daemonJSONPath); err == nil {
 		backupPath := daemonJSONPath + ".bak." + time.Now().Format("20060102150405")
 		data, _ := os.ReadFile(daemonJSONPath)
-		_ = os.WriteFile(backupPath, data, 0644)
+		_ = os.WriteFile(backupPath, data, 0600)
 	}
 
 	data, err := json.MarshalIndent(cfg, "", "  ")
@@ -77,7 +77,7 @@ func WriteDaemonJSON(cfg map[string]interface{}) error {
 		return fmt.Errorf("failed to create /etc/docker: %w", err)
 	}
 
-	if err := os.WriteFile(daemonJSONPath, data, 0644); err != nil {
+	if err := os.WriteFile(daemonJSONPath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write %s: %w", daemonJSONPath, err)
 	}
 	return nil

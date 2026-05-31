@@ -83,7 +83,7 @@ func (a *AuditLogger) Log(entry AuditEntry) error {
 	}
 
 	// Open file in append mode
-	f, err := os.OpenFile(a.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(a.path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
 		slog.Warn("audit: failed to open log file", "path", a.path, "error", err)
 		return fmt.Errorf("audit: failed to open log file: %w", err)

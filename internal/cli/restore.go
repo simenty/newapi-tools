@@ -176,9 +176,18 @@ func extractTarArchive(archivePath, dstDir string) error {
 
 		target := filepath.Join(dstDir, filepath.FromSlash(hdr.Name))
 
-		// Security: prevent path traversal
-		if !strings.HasPrefix(target, filepath.Clean(dstDir)+string(os.PathSeparator)) &&
-			target != filepath.Clean(dstDir) {
+		absDst, err := filepath.Abs(dstDir)
+		if err != nil {
+			return fmt.Errorf("failed to resolve destination path: %w", err)
+		}
+		absTarget, err := filepath.Abs(target)
+		if err != nil {
+			return fmt.Errorf("failed to resolve target path: %w", err)
+		}
+		cleanDst := filepath.Clean(absDst)
+		cleanTarget := filepath.Clean(absTarget)
+		if !strings.HasPrefix(cleanTarget, cleanDst+string(os.PathSeparator)) &&
+			cleanTarget != cleanDst {
 			return fmt.Errorf("invalid tar path (possible traversal): %s", hdr.Name)
 		}
 

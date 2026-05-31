@@ -87,7 +87,10 @@ func (s *Store) Save(instances []Instance) error {
 
 // Add appends a new instance after validating uniqueness of name and port.
 func (s *Store) Add(inst Instance) error {
-	instances, err := s.Load()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	instances, err := s.loadLocked()
 	if err != nil {
 		return err
 	}
@@ -104,12 +107,15 @@ func (s *Store) Add(inst Instance) error {
 	}
 
 	instances = append(instances, inst)
-	return s.Save(instances)
+	return s.saveLocked(instances)
 }
 
 // Remove deletes an instance by name. Returns error if the instance is active.
 func (s *Store) Remove(name string) error {
-	instances, err := s.Load()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	instances, err := s.loadLocked()
 	if err != nil {
 		return err
 	}
@@ -131,7 +137,7 @@ func (s *Store) Remove(name string) error {
 		return apperr.New(apperr.CodeInstanceNotFound, fmt.Sprintf("实例 '%s' 不存在", name), "", nil)
 	}
 
-	return s.Save(newInstances)
+	return s.saveLocked(newInstances)
 }
 
 // Get returns a single instance by name.
@@ -152,7 +158,10 @@ func (s *Store) Get(name string) (*Instance, error) {
 
 // SetActive marks the given instance as active and deactivates all others.
 func (s *Store) SetActive(name string) error {
-	instances, err := s.Load()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	instances, err := s.loadLocked()
 	if err != nil {
 		return err
 	}
@@ -171,7 +180,7 @@ func (s *Store) SetActive(name string) error {
 		return apperr.New(apperr.CodeInstanceNotFound, fmt.Sprintf("实例 '%s' 不存在", name), "", nil)
 	}
 
-	return s.Save(instances)
+	return s.saveLocked(instances)
 }
 
 // GetActive returns the currently active instance, or nil if none is active.
