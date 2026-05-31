@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     name: Test
@@ -55,7 +58,7 @@ jobs:
           Write-Host "Coverage check passed!"
 
       - name: Upload Coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           file: coverage.out
           fail_ci_if_error: true
@@ -73,7 +76,7 @@ jobs:
         with:
           go-version: '1.22'
 
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v7
         with:
           version: latest
           args: --timeout=5m
