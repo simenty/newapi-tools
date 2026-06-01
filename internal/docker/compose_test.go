@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -98,7 +99,7 @@ func TestComposePsParse(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Test with non-existent dir — expect error, not panic
-	_, err = c.ComposePs(nil, "/nonexistent-dir-xyz")
+	_, err = c.ComposePs(context.Background(), "/nonexistent-dir-xyz")
 	if err == nil {
 		t.Log("ComposePs with nonexistent dir returned nil (may have docker fallback)")
 	}

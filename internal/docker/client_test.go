@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"context"
 	"testing"
 )
 
@@ -65,8 +66,8 @@ func TestParseContainerLineInvalid(t *testing.T) {
 	lines := []string{
 		"",
 		"only-one-field",
-		"a|b|c|d",             // only 4 parts
-		"a|b|c|d|e|f|g|h",     // too many — still valid with 6 max
+		"a|b|c|d",         // only 4 parts
+		"a|b|c|d|e|f|g|h", // too many — still valid with 6 max
 	}
 	for _, line := range lines {
 		got, ok := parseContainerLine(line)
@@ -150,7 +151,7 @@ func TestFindContainerByNameEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, err := c.FindContainerByName(nil, "nonexistent-container-xyz-123")
+	result, err := c.FindContainerByName(context.Background(), "nonexistent-container-xyz-123")
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
