@@ -61,12 +61,20 @@ This is a no-op on Windows.`,
 	RunE: runConfigChmod,
 }
 
+var configValidateCmd = &cobra.Command{
+	Use:   "validate",
+	Short: "Validate configuration",
+	Long:  `Validate the current configuration for correctness.`,
+	RunE:  runConfigValidate,
+}
+
 func init() {
 	configCmd.Flags().Bool("json", false, "output in JSON format")
 
 	configCmd.AddCommand(configSetCmd)
 	configCmd.AddCommand(configInitCmd)
 	configCmd.AddCommand(configChmodCmd)
+	configCmd.AddCommand(configValidateCmd)
 	rootCmd.AddCommand(configCmd)
 }
 
@@ -446,6 +454,21 @@ func runConfigChmod(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("one or more files could not be fixed")
 	}
 	fmt.Println("Done. All sensitive config files have been secured.")
+	return nil
+}
+
+// ---- config validate ----
+
+func runConfigValidate(cmd *cobra.Command, args []string) error {
+	cfg := core.GetConfig()
+	if cfg == nil {
+		return fmt.Errorf("configuration not loaded")
+	}
+	if err := cfg.Validate(); err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Configuration invalid: %v\n", err)
+		return err
+	}
+	fmt.Println("✅ Configuration is valid.")
 	return nil
 }
 

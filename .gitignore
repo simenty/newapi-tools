@@ -14,6 +14,8 @@
 # Output of go coverage
 *.out
 *_cover
+cover
+coverage
 
 # Go workspace
 go.work
