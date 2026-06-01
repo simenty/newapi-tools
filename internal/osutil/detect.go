@@ -9,7 +9,11 @@ import (
 
 // parseOSRelease reads and parses /etc/os-release.
 func parseOSRelease() (*osRelease, error) {
-	f, err := os.Open("/etc/os-release")
+	return parseOSReleaseFrom("/etc/os-release")
+}
+
+func parseOSReleaseFrom(path string) (*osRelease, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
