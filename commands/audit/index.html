@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://simenty.github.io/newapi-tools/commands/update/">
+        <link rel="canonical" href="https://simenty.github.io/newapi-tools/commands/audit/">
       
       
-        <link rel="prev" href="../restore/">
+        <link rel="prev" href="../status/">
       
       
-        <link rel="next" href="../doctor/">
+        <link rel="next" href="../backup/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>update - NewAPI Tools</title>
+        <title>audit - NewAPI Tools</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#update" class="md-skip">
+        <a href="#audit" class="md-skip">
           跳转至
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              update
+              audit
             
           </span>
         </div>
@@ -533,10 +533,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../audit/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    audit
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -552,6 +579,115 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        用法
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        子命令
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="子命令">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        list
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="list">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        标志
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        示例
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        输出说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        注意事项
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -617,37 +753,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    update
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../update/" class="md-nav__link">
         
   
   
@@ -663,81 +772,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="目录">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      目录
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        用法
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        说明
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_3" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        标志
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_4" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        示例
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#_5" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        回滚
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -985,14 +1019,27 @@
   <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        说明
+        子命令
       
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="子命令">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list" class="md-nav__link">
+    <span class="md-ellipsis">
       
-        <li class="md-nav__item">
+        list
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="list">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
   <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1002,8 +1049,8 @@
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
+        
+          <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1013,12 +1060,33 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
   <a href="#_5" class="md-nav__link">
     <span class="md-ellipsis">
       
-        回滚
+        输出说明
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        注意事项
       
     </span>
   </a>
@@ -1045,20 +1113,17 @@
   
 
 
-<h1 id="update">update</h1>
-<p>更新 new-api 到最新版本。</p>
+<h1 id="audit">audit</h1>
+<p>管理 newapi-tools 的审计日志，查看命令执行历史。</p>
 <h2 id="_1">用法</h2>
-<div class="highlight"><pre><span></span><code>newapi-tools<span class="w"> </span>update<span class="w"> </span><span class="o">[</span>flags<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>newapi-tools<span class="w"> </span>audit<span class="w"> </span>&lt;subcommand&gt;<span class="w"> </span><span class="o">[</span>flags<span class="o">]</span>
 </code></pre></div>
-<h2 id="_2">说明</h2>
-<p>update 命令执行以下步骤：</p>
-<ol>
-<li>自动检测并应用最快镜像源（可用 <code>--no-auto-mirror</code> 跳过）</li>
-<li>创建更新前备份（可用 <code>--backup=false</code> 跳过）</li>
-<li>拉取新镜像</li>
-<li>使用 <code>docker compose up -d --force-recreate</code> 重建容器</li>
-</ol>
-<h2 id="_3">标志</h2>
+<h2 id="_2">子命令</h2>
+<h3 id="list">list</h3>
+<p>列出审计日志条目，支持可选过滤。</p>
+<div class="highlight"><pre><span></span><code>newapi-tools<span class="w"> </span>audit<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>flags<span class="o">]</span>
+</code></pre></div>
+<h4 id="_3">标志</h4>
 <table>
 <thead>
 <tr>
@@ -1069,49 +1134,67 @@
 </thead>
 <tbody>
 <tr>
-<td><code>--image</code></td>
-<td></td>
-<td>指定目标镜像版本（默认拉取 latest）</td>
+<td><code>--last</code></td>
+<td>0</td>
+<td>显示最近 N 条记录（0 = 全部）</td>
 </tr>
 <tr>
-<td><code>--backup</code></td>
-<td>true</td>
-<td>更新前自动备份</td>
+<td><code>--cmd</code></td>
+<td>""</td>
+<td>按命令名称过滤（子串匹配）</td>
 </tr>
 <tr>
-<td><code>--force</code></td>
+<td><code>--since</code></td>
+<td>""</td>
+<td>只显示此时间之后的记录（格式：2006-01-02 或 2006-01-02T15:04:05）</td>
+</tr>
+<tr>
+<td><code>--json</code></td>
 <td>false</td>
-<td>强制更新（跳过备份）</td>
-</tr>
-<tr>
-<td><code>--mirror</code></td>
-<td></td>
-<td>指定镜像源加速拉取</td>
-</tr>
-<tr>
-<td><code>--no-auto-mirror</code></td>
-<td>false</td>
-<td>跳过自动检测最快镜像源</td>
+<td>以 JSON 格式输出（方便脚本处理）</td>
 </tr>
 </tbody>
 </table>
-<h2 id="_4">示例</h2>
-<div class="highlight"><pre><span></span><code><span class="c1"># 更新到最新版本</span>
-newapi-tools<span class="w"> </span>update
+<h4 id="_4">示例</h4>
+<div class="highlight"><pre><span></span><code><span class="c1"># 列出所有审计记录</span>
+newapi-tools<span class="w"> </span>audit<span class="w"> </span>list
 
-<span class="c1"># 更新到指定版本</span>
-newapi-tools<span class="w"> </span>update<span class="w"> </span>--image<span class="w"> </span>calciumion/new-api:v0.3.5
+<span class="c1"># 只显示最近 10 条</span>
+newapi-tools<span class="w"> </span>audit<span class="w"> </span>list<span class="w"> </span>--last<span class="w"> </span><span class="m">10</span>
 
-<span class="c1"># 使用指定镜像源更新</span>
-newapi-tools<span class="w"> </span>update<span class="w"> </span>--mirror<span class="w"> </span>tuna
+<span class="c1"># 按命令名过滤</span>
+newapi-tools<span class="w"> </span>audit<span class="w"> </span>list<span class="w"> </span>--cmd<span class="w"> </span>install
 
-<span class="c1"># 跳过备份强制更新</span>
-newapi-tools<span class="w"> </span>update<span class="w"> </span>--force
+<span class="c1"># 只显示某天之后的记录</span>
+newapi-tools<span class="w"> </span>audit<span class="w"> </span>list<span class="w"> </span>--since<span class="w"> </span><span class="m">2026</span>-01-01
+
+<span class="c1"># JSON 输出</span>
+newapi-tools<span class="w"> </span>audit<span class="w"> </span>list<span class="w"> </span>--last<span class="w"> </span><span class="m">5</span><span class="w"> </span>--json
 </code></pre></div>
-<h2 id="_5">回滚</h2>
-<p>如果更新后出现问题，可以从备份恢复：</p>
-<div class="highlight"><pre><span></span><code>newapi-tools<span class="w"> </span>restore<span class="w"> </span>--file<span class="w"> </span>latest
+<h2 id="_5">输出说明</h2>
+<p>表格输出示例：</p>
+<div class="highlight"><pre><span></span><code>TIME                    CMD       USER     RESULT  DURATION
+2026-06-01 10:30:15     install   root     ok      120ms
+2026-06-01 10:28:03     status    root     ok      45ms
+2026-06-01 10:25:00     doctor    root     error   30ms
 </code></pre></div>
+<p>JSON 输出示例：</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-06-01T10:30:15+08:00&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;install&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;root&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;result&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ok&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">120</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">]</span>
+</code></pre></div>
+<h2 id="_6">注意事项</h2>
+<ul>
+<li>审计日志文件默认存储在 <code>~/.newapi-tools/audit.log</code>，自动轮转</li>
+<li>使用 <code>--cmd</code> 过滤时执行子串匹配，例如 <code>--cmd status</code> 会匹配所有包含 "status" 的命令</li>
+<li><code>--since</code> 支持日期（2006-01-02）和日期时间（2006-01-02T15:04:05）两种格式</li>
+</ul>
 
 
 
