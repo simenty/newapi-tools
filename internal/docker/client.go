@@ -70,6 +70,26 @@ type ContainerInfo struct {
 	ComposeProject string // compose project name (com.docker.compose.project label)
 }
 
+// parseContainerLine parses a single "|" delimited line from docker ps --format output.
+func parseContainerLine(line string) (ContainerInfo, bool) {
+	parts := strings.SplitN(line, "|", 6)
+	if len(parts) < 5 {
+		return ContainerInfo{}, false
+	}
+	project := ""
+	if len(parts) > 5 {
+		project = parts[5]
+	}
+	return ContainerInfo{
+		ID:             parts[0],
+		Name:           parts[1],
+		Image:          parts[2],
+		State:          parts[3],
+		Status:         parts[4],
+		ComposeProject: project,
+	}, true
+}
+
 // ContainerList returns all containers, including stopped ones.
 func (c *Client) ContainerList(ctx context.Context) ([]ContainerInfo, error) {
 	cmd := exec.CommandContext(ctx, c.dockerPath, "ps", "-a", "--format", "{{.ID}}|{{.Names}}|{{.Image}}|{{.State}}|{{.Status}}|{{.Label \"com.docker.compose.project\"}}")
@@ -83,18 +103,10 @@ func (c *Client) ContainerList(ctx context.Context) ([]ContainerInfo, error) {
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 6) // now 6 parts including compose project
-		if len(parts) < 5 {
-			continue
+		ctr, ok := parseContainerLine(line)
+		if ok {
+			containers = append(containers, ctr)
 		}
-		containers = append(containers, ContainerInfo{
-			ID:             parts[0],
-			Name:           parts[1],
-			Image:          parts[2],
-			State:          parts[3],
-			Status:         parts[4],
-			ComposeProject: parts[5],
-		})
 	}
 
 	return containers, nil

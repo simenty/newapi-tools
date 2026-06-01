@@ -37,16 +37,25 @@ func GetContainerStats(containerName string) (*ContainerStats, error) {
 		return nil, fmt.Errorf("no stats output for container %s", containerName)
 	}
 
+	stats, err := parseStatsLine(containerName, line)
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
+
+// parseStatsLine parses a single stats line (tab-delimited) into ContainerStats.
+func parseStatsLine(name, line string) (*ContainerStats, error) {
 	parts := strings.SplitN(line, "\t", 6)
 	if len(parts) < 6 {
-		return nil, fmt.Errorf("unexpected stats format for container %s: %q", containerName, line)
+		return nil, fmt.Errorf("unexpected stats format for container %s: %q", name, line)
 	}
 
 	// Strip leading "/" from container name (docker stats prefixes it)
-	name := strings.TrimPrefix(parts[0], "/")
+	parsedName := strings.TrimPrefix(parts[0], "/")
 
 	return &ContainerStats{
-		Name:     name,
+		Name:     parsedName,
 		CPUPerc:  parts[1],
 		MemUsage: parts[2],
 		MemPerc:  parts[3],
