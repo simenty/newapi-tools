@@ -34,7 +34,7 @@
   <a href="#-project-structure">📁 Structure</a> ·
   <a href="#-configuration">⚙️ Config</a> ·
   <a href="#-development">🔧 Dev</a> ·
-  <a href="#-version-history">📜 History</a>
+  <a href="#-disclaimer">⚠️ Disclaimer</a>
 </p>
 
 ---
@@ -231,18 +231,11 @@ The bundled `plugins/newapi/` plugin provides 7 shell script commands, with `ins
 
 ---
 
-## 📜 Version History
+## ⚠️ Disclaimer
 
-| Version | Highlights |
-|---------|-----------|
-| **V3.4.0** | Audit fixes (EXDEV fallback, `encoding/json` output, ring buffer, CI docs check) |
-| **V3.3.5** | Fix resolveAssetName, semver compare, doctor error code X001 |
-| **V3.3.4** | Security audit: path traversal fix, permission lockdown, shell injection prevention |
-| **V3.3.0** | Domain/MaxBackups config, `Check` struct refactor, auto-rollback |
-| **V3.2.0** | Self-update (`--check`/`--self`), audit log query, multi-instance, error code docs |
-| **V3.1.0** | i18n framework, structured error handling, audit logging, security checks |
-| **V3.0.0** | Mirror management, 6 built-in CN mirrors, 83 tests |
-| **V2.4** | Shell V2 plugin system (archived on `v2` branch) |
+This tool executes real Docker CLI commands that can modify container and host configurations. Running high-risk operations (such as `install --force`, `restore`, `update`) without verified backups, maintenance windows, or a clear rollback plan may result in container downtime, service interruption, configuration corruption, or irreversible data loss. **All data loss, recovery costs, and third-party restoration expenses are the sole responsibility of the operator.**
+
+Before executing `backup`, `restore`, `update`, `doctor --fix`, or similar commands, it is recommended to read the relevant documentation in the [docs/](docs/) directory.
 
 ---
 
@@ -258,7 +251,7 @@ The bundled `plugins/newapi/` plugin provides 7 shell script commands, with `ins
   <a href="#-project-structure">📁 Structure</a> ·
   <a href="#-configuration">⚙️ Config</a> ·
   <a href="#-development">🔧 Dev</a> ·
-  <a href="#-version-history">📜 History</a>
+  <a href="#-disclaimer">⚠️ Disclaimer</a>
 </p>
 
 <p align="center">
