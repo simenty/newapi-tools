@@ -167,18 +167,9 @@ VERSION_ID=22.04
 	}
 	tmpFile.Close()
 
-	// Temporarily replace /etc/os-release with temp file path
-	defer func() { _ = os.Remove("/etc/os-release"); _ = os.WriteFile("/etc/os-release", nil, 0644) }()
-	_ = os.Remove("/etc/os-release")
-	_ = os.Symlink(tmpFile.Name(), "/etc/os-release")
-
-	release, err := parseOSRelease()
+	release, err := parseOSReleaseFrom(tmpFile.Name())
 	if err != nil {
-		// May fail on Windows due to symlink; that's OK
-		if runtime.GOOS == "windows" {
-			t.Skip("symlink not supported on Windows")
-		}
-		t.Fatalf("parseOSRelease failed: %v", err)
+		t.Fatalf("parseOSReleaseFrom failed: %v", err)
 	}
 	if release.ID != "ubuntu" {
 		t.Errorf("expected ID 'ubuntu', got %q", release.ID)
@@ -310,16 +301,9 @@ func TestParseOSLineEdgeCases(t *testing.T) {
 	}
 	tmpFile.Close()
 
-	defer func() { _ = os.Remove("/etc/os-release"); _ = os.WriteFile("/etc/os-release", nil, 0644) }()
-	_ = os.Remove("/etc/os-release")
-	_ = os.Symlink(tmpFile.Name(), "/etc/os-release")
-
-	release, err := parseOSRelease()
+	release, err := parseOSReleaseFrom(tmpFile.Name())
 	if err != nil {
-		if runtime.GOOS == "windows" {
-			t.Skip("symlink not supported on Windows")
-		}
-		t.Fatalf("parseOSRelease failed: %v", err)
+		t.Fatalf("parseOSReleaseFrom failed: %v", err)
 	}
 	if release.ID != "test" {
 		t.Errorf("expected ID 'test', got %q", release.ID)
