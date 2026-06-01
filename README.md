@@ -34,7 +34,7 @@
   <a href="#-项目结构">📁 项目结构</a> ·
   <a href="#-配置文件">⚙️ 配置文件</a> ·
   <a href="#-开发">🔧 开发</a> ·
-  <a href="#-版本历史">📜 版本历史</a>
+  <a href="#-免责声明">⚠️ 免责声明</a>
 </p>
 
 ---
@@ -231,18 +231,11 @@ GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o dist/newapi-tools-linux-amd
 
 ---
 
-## 📜 版本历史
+## ⚠️ 免责声明
 
-| 版本 | 亮点 |
-|------|------|
-| **V3.4.0** | 审计修复（跨分区回滚、JSON 统一序列化、环形缓冲、CI 文档检查） |
-| **V3.3.5** | 修复 resolveAssetName、semver 对比、doctor 错误码 X001 |
-| **V3.3.4** | 安全审计：路径遍历防护、权限锁定、Shell 注入防护 |
-| **V3.3.0** | Domain/MaxBackups 配置扩展、Check 结构体重构、自动回滚 |
-| **V3.2.0** | 自更新、审计日志、多实例管理、错误码文档自动生成 |
-| **V3.1.0** | 国际化框架、结构化错误处理、审计日志、安全检查 |
-| **V3.0.0** | 镜像管理（6 内置源）、83 个测试 |
-| **V2.4** | Shell V2 插件系统（已归档 `v2` 分支） |
+这是一个会真实调用 Docker CLI 命令并修改宿主机容器配置的运维工具。如果你在没有经过验证的备份、没有维护窗口、没有明确回滚方案的前提下执行高风险动作（如 `install --force`、`restore`、`update` 等），可能导致容器失联、业务中断、配置损坏或不可逆的数据损失。**所有数据损失、恢复成本与第三方恢复费用均由实际操作人自行承担。**
+
+执行 `backup`、`restore`、`update`、`doctor --fix` 等命令前，建议先完整阅读 [docs/](docs/) 目录下的相关文档。
 
 ---
 
@@ -258,7 +251,7 @@ GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o dist/newapi-tools-linux-amd
   <a href="#-项目结构">📁 项目结构</a> ·
   <a href="#-配置文件">⚙️ 配置文件</a> ·
   <a href="#-开发">🔧 开发</a> ·
-  <a href="#-版本历史">📜 版本历史</a>
+  <a href="#-免责声明">⚠️ 免责声明</a>
 </p>
 
 <p align="center">
