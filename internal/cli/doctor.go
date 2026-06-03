@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -37,19 +39,19 @@ func init() {
 
 // checkResult represents the outcome of a single diagnostic check.
 type checkResult struct {
-	Name    string         `json:"check"`
-	Status  string         `json:"status"` // "OK", "WARN", "FAIL", "SKIP"
-	Message string         `json:"message"`
-	Detail  *VerboseCheck  `json:"detail,omitempty"` // Detailed diagnostic info (--verbose)
+	Name    string        `json:"check"`
+	Status  string        `json:"status"` // "OK", "WARN", "FAIL", "SKIP"
+	Message string        `json:"message"`
+	Detail  *VerboseCheck `json:"detail,omitempty"` // Detailed diagnostic info (--verbose)
 }
 
 // VerboseCheck contains detailed info for a check (--verbose mode).
 type VerboseCheck struct {
-	FilePath  string `json:"file,omitempty"`  // File path involved in the check (if any)
-	Command   string `json:"command,omitempty"`   // Command executed (if any)
-	Expected  string `json:"expected,omitempty"`  // Expected value
-	Actual    string `json:"actual,omitempty"`    // Actual value
-	RawOutput string `json:"raw,omitempty"` // Raw command output (if any)
+	FilePath  string `json:"file,omitempty"`     // File path involved in the check (if any)
+	Command   string `json:"command,omitempty"`  // Command executed (if any)
+	Expected  string `json:"expected,omitempty"` // Expected value
+	Actual    string `json:"actual,omitempty"`   // Actual value
+	RawOutput string `json:"raw,omitempty"`      // Raw command output (if any)
 }
 
 // Check represents a single diagnostic check with its name, runner, fixer, and hint.
@@ -141,6 +143,18 @@ var checks = []Check{
 		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkDockerGroupMembership() },
 		Fix:     nil,
 		FixHint: "运行: sudo usermod -aG docker $USER && newgrp docker",
+	},
+	{
+		Name:    "network-connectivity",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkNetworkConnectivity() },
+		Fix:     nil,
+		FixHint: "检查网络连接和防火墙设置",
+	},
+	{
+		Name:    "go-version",
+		Run:     func(ctx context.Context, cfg *core.Config) checkResult { return checkGoVersion() },
+		Fix:     nil,
+		FixHint: "考虑升级到最新的 Go 版本以获得安全更新和性能改进",
 	},
 }
 
@@ -803,4 +817,70 @@ func fixConfigPermissions(ctx context.Context, cfg *core.Config) error {
 // composeUpFix runs docker compose up -d in the configured home directory.
 func composeUpFix(ctx context.Context, cfg *core.Config) error {
 	return docker.ComposeUp(ctx, cfg.NewAPI.Home, cfg.Docker.ComposeCmd)
+}
+
+// checkNetworkConnectivity checks if common endpoints are reachable.
+var networkEndpoints = []struct {
+	Name string
+	URL  string
+}{
+	{"Docker Hub", "https://hub.docker.com"},
+	{"GitHub", "https://github.com"},
+	{"Docker Registry", "https://registry-1.docker.io"},
+}
+
+func checkNetworkConnectivity() checkResult {
+	client := &http.Client{Timeout: 5 * time.Second}
+	var unreachable []string
+	for _, ep := range networkEndpoints {
+		req, err := http.NewRequest(http.MethodHead, ep.URL, nil)
+		if err != nil {
+			unreachable = append(unreachable, fmt.Sprintf("%s: %v", ep.Name, err))
+			continue
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			unreachable = append(unreachable, fmt.Sprintf("%s: %v", ep.Name, err))
+			continue
+		}
+		_, _ = io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}
+	if len(unreachable) > 0 {
+		return checkResult{
+			Name:    "network-connectivity",
+			Status:  "WARN",
+			Message: fmt.Sprintf("%d/%d endpoint(s) unreachable", len(unreachable), len(networkEndpoints)),
+			Detail: &VerboseCheck{
+				Expected: fmt.Sprintf("all %d endpoints reachable", len(networkEndpoints)),
+				Actual:   strings.Join(unreachable, "; "),
+			},
+		}
+	}
+	return checkResult{
+		Name:    "network-connectivity",
+		Status:  "OK",
+		Message: fmt.Sprintf("all %d endpoints reachable", len(networkEndpoints)),
+		Detail: &VerboseCheck{
+			Expected: "network connectivity OK",
+			Actual:   "all endpoints reachable",
+		},
+	}
+}
+
+// checkGoVersion checks the Go runtime version.
+func checkGoVersion() checkResult {
+	currentVersion := runtime.Version()
+	// runtime.Version() returns "goX.Y.Z" format
+	trimmed := strings.TrimPrefix(currentVersion, "go")
+
+	return checkResult{
+		Name:    "go-version",
+		Status:  "OK",
+		Message: fmt.Sprintf("built with Go %s", trimmed),
+		Detail: &VerboseCheck{
+			Expected: "Go runtime version",
+			Actual:   fmt.Sprintf("go %s", trimmed),
+		},
+	}
 }
