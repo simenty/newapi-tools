@@ -260,17 +260,22 @@ func backupAndReplace(currentBin, newBin, backupDir string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("open current bin: %w", err)
 	}
-	defer srcFile.Close()
 
 	dstFile, err := os.Create(backupPath)
 	if err != nil {
+		srcFile.Close()
 		return "", fmt.Errorf("create backup file: %w", err)
 	}
-	defer dstFile.Close()
 
 	if _, err := io.Copy(dstFile, srcFile); err != nil {
+		srcFile.Close()
+		dstFile.Close()
 		return "", fmt.Errorf("copy to backup: %w", err)
 	}
+
+	// Close files before rename (Windows requires files to be closed)
+	srcFile.Close()
+	dstFile.Close()
 
 	// Make sure new binary is executable
 	if err := os.Chmod(newBin, 0755); err != nil {

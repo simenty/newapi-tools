@@ -399,8 +399,9 @@ func runSelfUpdate(ctx context.Context) error {
 
 	// Run self-update
 	opts := selfupdate.SelfUpdateOptions{
-		CurrentBinary: currentBinary,
-		Repo:          "simenty/newapi-tools",
+		CurrentBinary:  currentBinary,
+		RequireSHA256:  true,
+		Repo:           "simenty/newapi-tools",
 		OnProgress: func(stage string, pct float64) {
 			// stage is not used for now
 			if pct > 0 {

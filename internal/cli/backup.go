@@ -67,7 +67,7 @@ func runBackup(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create output directory
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0700); err != nil {
 		return fmt.Errorf("failed to create backup directory: %w", err)
 	}
 
@@ -299,7 +299,7 @@ func copyFileIfExists(src, dst string) error {
 	}
 	defer in.Close()
 
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0700); err != nil {
 		return err
 	}
 
