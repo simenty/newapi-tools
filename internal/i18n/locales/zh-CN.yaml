@@ -15,6 +15,7 @@ install:
   creating_dir: "正在创建安装目录..."
   generating_compose: "正在生成 docker-compose.yml..."
   generating_env: "正在生成 .env 文件..."
+  saving_config: "正在保存配置..."
   step_pulling: "正在拉取镜像..."
   step_generating: "正在生成配置..."
   step_starting: "正在启动容器..."

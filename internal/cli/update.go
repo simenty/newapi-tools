@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var updateSkipVerify bool
+
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update new-api to latest version",
@@ -34,6 +36,7 @@ func init() {
 	updateCmd.Flags().Bool("no-auto-mirror", false, "skip auto-detecting and applying the fastest registry mirror")
 	updateCmd.Flags().Bool("check", false, "check for latest version without updating")
 	updateCmd.Flags().Bool("self", false, "update newapi-tools itself to latest version")
+	updateCmd.Flags().BoolVar(&updateSkipVerify, "skip-verify", false, "skip SHA256 checksum verification when self-updating newapi-tools")
 
 	rootCmd.AddCommand(updateCmd)
 }
@@ -401,6 +404,7 @@ func runSelfUpdate(ctx context.Context) error {
 	opts := selfupdate.SelfUpdateOptions{
 		CurrentBinary: currentBinary,
 		Repo:          "simenty/newapi-tools",
+		RequireSHA256: !updateSkipVerify,
 		OnProgress: func(stage string, pct float64) {
 			// stage is not used for now
 			if pct > 0 {

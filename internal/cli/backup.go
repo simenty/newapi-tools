@@ -67,7 +67,7 @@ func runBackup(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create output directory
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0700); err != nil {
 		return fmt.Errorf("failed to create backup directory: %w", err)
 	}
 
@@ -238,7 +238,7 @@ func readContainerEnv(ctx context.Context, dockerPath, container, envKey string)
 
 // createTarArchive creates a tar (optionally gzip-compressed) archive of srcDir.
 func createTarArchive(archivePath, srcDir string, compress bool) error {
-	f, err := os.Create(archivePath)
+	f, err := os.OpenFile(archivePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
